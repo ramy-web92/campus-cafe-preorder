@@ -4,6 +4,8 @@ import { config } from "./config.js";
 import { HttpError, sendError } from "./http/errors.js";
 import { sessionMiddleware } from "./http/session.js";
 import { authRouter } from "./routes/authRoutes.js";
+import { menuRouter } from "./routes/menuRoutes.js";
+import { orderRouter } from "./routes/orderRoutes.js";
 
 export const app = express();
 
@@ -17,6 +19,8 @@ app.get("/api/health", (_req, res) => {
 });
 
 app.use(authRouter);
+app.use(menuRouter);
+app.use(orderRouter);
 
 // Test-only route used by TEST-S03 to check the 500 error body.
 if (process.env.NODE_ENV === "test") {

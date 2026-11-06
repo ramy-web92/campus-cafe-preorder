@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { CurrentUser, authApi } from "./api.js";
 import Login from "./Login.js";
+import Menu from "./Menu.js";
 
 const ROLE_LABELS = { CUSTOMER: "Customer", OPERATOR: "Operator" } as const;
 
@@ -48,9 +49,7 @@ export default function App() {
         ) : !user ? (
           <Login onLoggedIn={setUser} />
         ) : user.role === "CUSTOMER" ? (
-          <section aria-labelledby="home-title">
-            <h2 id="home-title" className="h5">Menu</h2>
-          </section>
+          <Menu />
         ) : (
           <section aria-labelledby="home-title">
             <h2 id="home-title" className="h5">Order queue</h2>

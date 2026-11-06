@@ -46,3 +46,51 @@ export const authApi = {
   me: () => api<CurrentUser>("/api/auth/me"),
   logout: () => api<void>("/api/auth/logout", { method: "POST" }),
 };
+
+// ---------------------------------------------------------------------------
+// Menu and orders (F-03, F-04)
+
+export interface MenuItem {
+  id: number;
+  name: string;
+  description: string;
+  priceSatang: number;
+  isAvailable: boolean;
+}
+export interface MenuCategory {
+  id: number;
+  name: string;
+  items: MenuItem[];
+}
+export interface OrderLine {
+  menuItemId: number;
+  itemName: string;
+  unitPriceSatang: number;
+  quantity: number;
+  lineTotalSatang: number;
+}
+export interface OrderDetail {
+  id: number;
+  orderNumber: string;
+  status: string;
+  totalSatang: number;
+  note: string | null;
+  createdAt: string;
+  acceptedAt: string | null;
+  lines: OrderLine[];
+  history: { fromStatus: string | null; toStatus: string; actorName: string; reason: string | null; createdAt: string }[];
+}
+
+export const menuApi = {
+  get: () => api<{ categories: MenuCategory[] }>("/api/menu").then((r) => r.categories),
+};
+
+export const ordersApi = {
+  create: (lines: { menuItemId: number; quantity: number }[], note: string) =>
+    api<{ order: OrderDetail }>("/api/orders", { method: "POST", body: JSON.stringify({ lines, note: note || undefined }) }).then((r) => r.order),
+};
+
+/** 6500 → "65.00 THB" (prices are integer satang, D-03). */
+export function formatTHB(satang: number): string {
+  return `${(satang / 100).toFixed(2)} THB`;
+}

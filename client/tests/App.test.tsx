@@ -6,7 +6,7 @@ import * as api from "../src/api.js";
 
 vi.mock("../src/api.js", async (orig) => {
   const actual = await orig<typeof import("../src/api.js")>();
-  return { ...actual, authApi: { login: vi.fn(), me: vi.fn(), logout: vi.fn() } };
+  return { ...actual, authApi: { login: vi.fn(), me: vi.fn(), logout: vi.fn() }, menuApi: { get: vi.fn().mockResolvedValue([]) } };
 });
 
 const alice = { id: 1, name: "Alice Customer", email: "alice@cafe.test", role: "CUSTOMER" as const };
@@ -46,7 +46,7 @@ describe("App shell and login", () => {
     await user.type(await screen.findByLabelText("Email"), alice.email);
     await user.type(screen.getByLabelText("Password"), "Cafe1234!");
     await user.click(screen.getByRole("button", { name: "Sign in" }));
-    expect(await screen.findByRole("heading", { name: "Menu" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Menu" })).toBeInTheDocument(); // Menu screen (F-03)
     expect(screen.getByText("Customer")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Log out" }));

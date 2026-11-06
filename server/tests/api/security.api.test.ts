@@ -1,11 +1,12 @@
 // TEST-S01, TEST-S03 — docs/sprints/sprint-1/sts.md (AC-05, AC-07).
 // TEST-S01 lists every protected route that exists so far; routes are added here with their features
-// (menu and orders in #6/#7, operator routes in #8). TEST-S02 (role checks) is added with those routes.
+// (menu and orders in #6/#7, operator routes in #8). TEST-S02 grows with the role-restricted routes.
 import { describe, it, expect, afterAll } from "vitest";
 import request from "supertest";
 import { app } from "../../src/app.js";
 import { prisma } from "../../src/prisma.js";
 import { sessionStore } from "../../src/http/session.js";
+import { USERS, loginAs } from "../helpers/agents.js";
 
 afterAll(async () => {
   await prisma.$disconnect();
@@ -15,6 +16,8 @@ afterAll(async () => {
 export const PROTECTED_ROUTES: Array<[method: "get" | "post", path: string]> = [
   ["get", "/api/auth/me"],
   ["post", "/api/auth/logout"],
+  ["get", "/api/menu"],
+  ["post", "/api/orders"],
 ];
 
 describe("TEST-S01 — protected routes reject anonymous requests (AC-05, NFR-01)", () => {
@@ -23,6 +26,18 @@ describe("TEST-S01 — protected routes reject anonymous requests (AC-05, NFR-01
     expect(res.status).toBe(401);
     expect(Object.keys(res.body)).toEqual(["error"]);
     expect(res.body.error.code).toBe("UNAUTHENTICATED");
+  });
+});
+
+describe("TEST-S02 — role restrictions enforced by the backend (AC-19)", () => {
+  it("an Operator cannot place an order and nothing is stored", async () => {
+    const olivia = await loginAs(USERS.olivia);
+    const before = await prisma.order.count();
+    const item = await prisma.menuItem.findFirstOrThrow({ where: { isAvailable: true } });
+    const res = await olivia.post("/api/orders").send({ lines: [{ menuItemId: item.id, quantity: 1 }] });
+    expect(res.status).toBe(403);
+    expect(res.body.error.code).toBe("FORBIDDEN");
+    expect(await prisma.order.count()).toBe(before);
   });
 });
 
