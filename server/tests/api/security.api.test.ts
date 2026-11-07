@@ -20,6 +20,9 @@ export const PROTECTED_ROUTES: Array<[method: "get" | "post", path: string]> = [
   ["post", "/api/orders"],
   ["get", "/api/orders"],
   ["get", "/api/orders/1"],
+  ["get", "/api/operator/orders"],
+  ["get", "/api/operator/orders/1"],
+  ["post", "/api/operator/orders/1/accept"],
 ];
 
 describe("TEST-S01 — protected routes reject anonymous requests (AC-05, NFR-01)", () => {
@@ -49,6 +52,16 @@ describe("TEST-S02 — Customer-only order endpoints (AC-22)", () => {
     const order = await prisma.order.findFirstOrThrow();
     expect((await olivia.get("/api/orders")).status).toBe(403);
     expect((await olivia.get(`/api/orders/${order.id}`)).status).toBe(403);
+  });
+});
+
+describe("TEST-S02 — Operator-only endpoints (AC-33)", () => {
+  it("a Customer calling the operator endpoints gets 403", async () => {
+    const alice = await loginAs(USERS.alice);
+    const order = await prisma.order.findFirstOrThrow({ where: { status: "SUBMITTED" } });
+    expect((await alice.get("/api/operator/orders")).status).toBe(403);
+    expect((await alice.get(`/api/operator/orders/${order.id}`)).status).toBe(403);
+    expect((await alice.post(`/api/operator/orders/${order.id}/accept`)).status).toBe(403);
   });
 });
 

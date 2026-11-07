@@ -1,10 +1,11 @@
 // Application shell: current user, role-based home, header with logout (F-01).
 import { useCallback, useEffect, useState } from "react";
-import { CurrentUser, authApi, myOrdersApi } from "./api.js";
+import { CurrentUser, authApi, myOrdersApi, operatorApi } from "./api.js";
 import Login from "./Login.js";
 import Menu from "./Menu.js";
 import MyOrders from "./MyOrders.js";
 import OrderDetailPage from "./OrderDetail.js";
+import OperatorQueue from "./OperatorQueue.js";
 
 const ROLE_LABELS = { CUSTOMER: "Customer", OPERATOR: "Operator" } as const;
 
@@ -15,6 +16,7 @@ export default function App() {
   const [view, setView] = useState<"menu" | "orders" | "detail">("menu");
   const [orderId, setOrderId] = useState<number | null>(null);
   const loadCustomerOrder = useCallback(() => myOrdersApi.get(orderId!), [orderId]);
+  const loadOperatorOrder = useCallback(() => operatorApi.get(orderId!), [orderId]);
 
   function openOrder(id: number) {
     setOrderId(id);
@@ -77,9 +79,11 @@ export default function App() {
             {view === "detail" && orderId && <OrderDetailPage load={loadCustomerOrder} onBack={() => setView("orders")} backLabel="← My orders" />}
           </>
         ) : (
-          <section aria-labelledby="home-title">
-            <h2 id="home-title" className="h5">Order queue</h2>
-          </section>
+          view === "detail" && orderId ? (
+            <OrderDetailPage load={loadOperatorOrder} onBack={() => setView("menu")} backLabel="← Order queue" />
+          ) : (
+            <OperatorQueue onOpen={openOrder} />
+          )
         )}
       </main>
     </div>

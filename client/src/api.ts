@@ -115,3 +115,16 @@ export const myOrdersApi = {
   list: (page = 1) => api<Page<OrderSummary>>(`/api/orders?page=${page}`),
   get: (id: number) => api<{ order: OrderDetail }>(`/api/orders/${id}`).then((r) => r.order),
 };
+
+// ---------------------------------------------------------------------------
+// Operator queue and accept (F-06)
+
+export interface QueueOrder extends OrderSummary {
+  customerName: string;
+}
+
+export const operatorApi = {
+  list: (status = "SUBMITTED", page = 1) => api<Page<QueueOrder>>(`/api/operator/orders?status=${status}&page=${page}`),
+  get: (id: number) => api<{ order: OrderDetail & { customer: { id: number; name: string } } }>(`/api/operator/orders/${id}`).then((r) => r.order),
+  accept: (id: number) => api<{ order: OrderDetail }>(`/api/operator/orders/${id}/accept`, { method: "POST" }).then((r) => r.order),
+};
