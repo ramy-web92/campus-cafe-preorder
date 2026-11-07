@@ -1,6 +1,6 @@
 # F-05 My orders and order detail
 
-**Requirements:** FR-06, FR-07, BR-08 · **Issue:** #6 · **Depends on:** F-04 · **Version:** 1.0
+**Requirements:** FR-06, FR-07, BR-08 · **Issue:** #7 · **Depends on:** F-04 · **Version:** 1.1
 
 ## Feature SDS
 - **List:** returns only orders whose `customerId` is the session user, newest first, with number, created date, total, status and number of items. Paginated: 10 per page.
@@ -30,3 +30,4 @@ No change.
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-05 | Initial contract |
+| 1.1 | 2026-11-07 | Corrected the Issue number (the baseline PR took #1, so issues are #2–#9). No behavior change. |

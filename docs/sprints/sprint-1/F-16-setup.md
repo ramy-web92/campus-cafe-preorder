@@ -1,6 +1,6 @@
 # F-16 — Reproducible setup, schema and seed
 
-**Requirements:** NFR-07, NFR-12 (local) · **Issue:** #3 · **Depends on:** — · **Version:** 1.0
+**Requirements:** NFR-07, NFR-12 (local) · **Issue:** #4 · **Depends on:** — · **Version:** 1.1
 
 ## Feature SDS
 Create the project skeleton (`server/` Express + TypeScript + Prisma, `client/` React + Vite), the first database migration and an idempotent seed so that any team member or TA can run the product from a fresh clone.
@@ -37,3 +37,4 @@ No screen or endpoint in this feature. `GET /api/health` returns `{ "status": "o
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-05 | Initial contract |
+| 1.1 | 2026-11-07 | Corrected the Issue number (the baseline PR took #1, so issues are #2–#9). No behavior change. |

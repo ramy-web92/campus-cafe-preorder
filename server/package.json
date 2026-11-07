@@ -11,7 +11,9 @@
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset --force",
     "pretest": "dotenv -e .env.test -- prisma migrate reset --force",
-    "test": "dotenv -e .env.test -- vitest run"
+    "test": "dotenv -e .env.test -- vitest run",
+    "db:test:reset": "dotenv -e .env.test -- prisma migrate reset --force",
+    "start:test": "dotenv -e .env.test -- tsx src/index.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
