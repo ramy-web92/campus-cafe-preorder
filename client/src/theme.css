@@ -1,0 +1,9 @@
+/* "Zen Green" palette reused from the TokTickIT labs */
+:root {
+  --cafe-green: #1b7a4b;
+  --cafe-green-dark: #145c38;
+  --bs-primary: #1b7a4b;
+  --bs-primary-rgb: 27, 122, 75;
+}
+.btn-primary { --bs-btn-bg: var(--cafe-green); --bs-btn-border-color: var(--cafe-green); --bs-btn-hover-bg: var(--cafe-green-dark); --bs-btn-hover-border-color: var(--cafe-green-dark); }
+.text-brand { color: var(--cafe-green); }

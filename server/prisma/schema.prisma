@@ -1,0 +1,122 @@
+// KMUTT Café Pre-Order — data model (docs/system-sds.md §2, docs/sprints/sprint-1/F-16-setup.md)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  OPERATOR
+}
+
+enum OrderStatus {
+  SUBMITTED
+  ACCEPTED
+  PREPARING
+  READY
+  PICKED_UP
+  REJECTED
+  CANCELLED
+}
+
+model User {
+  id            Int                 @id @default(autoincrement())
+  email         String              @unique
+  name          String
+  passwordHash  String
+  role          Role
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  orders        Order[]
+  statusChanges OrderStatusChange[]
+}
+
+model Category {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  sortOrder Int        @default(0)
+  items     MenuItem[]
+}
+
+model MenuItem {
+  id          Int         @id @default(autoincrement())
+  categoryId  Int
+  category    Category    @relation(fields: [categoryId], references: [id])
+  name        String
+  description String      @default("")
+  // Integer satang (1 THB = 100 satang); CHECK 0 < price <= 100000 in the migration (D-03)
+  priceSatang Int
+  isAvailable Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orderLines  OrderLine[]
+
+  @@unique([categoryId, name])
+}
+
+model Order {
+  id            Int                 @id @default(autoincrement())
+  orderNumber   String              @unique
+  customerId    Int
+  customer      User                @relation(fields: [customerId], references: [id])
+  status        OrderStatus         @default(SUBMITTED)
+  totalSatang   Int
+  note          String?             @db.VarChar(200)
+  // Incremented on every status change (optimistic concurrency)
+  version       Int                 @default(1)
+  acceptedAt    DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  lines         OrderLine[]
+  statusChanges OrderStatusChange[]
+
+  @@index([status, createdAt])
+  @@index([customerId, createdAt])
+}
+
+model OrderLine {
+  id              Int      @id @default(autoincrement())
+  orderId         Int
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId      Int
+  menuItem        MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
+  // Snapshots taken at submission (BR-02)
+  itemName        String
+  unitPriceSatang Int
+  // CHECK 1..10 in the migration (BR-03)
+  quantity        Int
+  lineTotalSatang Int
+
+  // One line per item per order (BR-04)
+  @@unique([orderId, menuItemId])
+}
+
+// Append-only status history (BR-11)
+model OrderStatusChange {
+  id         Int          @id @default(autoincrement())
+  orderId    Int
+  order      Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  fromStatus OrderStatus?
+  toStatus   OrderStatus
+  actorId    Int
+  actor      User         @relation(fields: [actorId], references: [id])
+  reason     String?      @db.VarChar(300)
+  createdAt  DateTime     @default(now())
+
+  @@index([orderId, createdAt])
+}
+
+// Session store used by connect-pg-simple (docs/system-sds.md §5.2)
+model Session {
+  sid    String   @id @db.VarChar
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire], map: "IDX_session_expire")
+  @@map("session")
+}

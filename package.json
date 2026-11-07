@@ -1,0 +1,16 @@
+{
+  "name": "campus-cafe-preorder",
+  "version": "0.1.0",
+  "private": true,
+  "description": "KMUTT Café Pre-Order — end-to-end tests (server and client have their own package.json)",
+  "scripts": {
+    "pretest:e2e": "npm --prefix server run db:test:reset",
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "pg": "^8.13.1"
+  }
+}
