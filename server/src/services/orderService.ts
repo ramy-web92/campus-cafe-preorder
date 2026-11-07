@@ -99,3 +99,49 @@ export async function createOrder(customerId: number, body: unknown) {
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// F-05 My orders and order detail (FR-06, FR-07, BR-08)
+
+export const PAGE_SIZE = 10;
+
+export function parsePage(raw: unknown): number {
+  const n = Number(raw ?? 1);
+  return Number.isInteger(n) && n >= 1 ? n : 1;
+}
+
+/** Orders of one customer only, newest first. */
+export async function listCustomerOrders(customerId: number, page: number) {
+  const where = { customerId };
+  const [totalItems, orders] = await Promise.all([
+    prisma.order.count({ where }),
+    prisma.order.findMany({
+      where,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: { lines: { select: { quantity: true } } },
+    }),
+  ]);
+  return {
+    orders: orders.map((o) => ({
+      id: o.id,
+      orderNumber: o.orderNumber,
+      status: o.status,
+      totalSatang: o.totalSatang,
+      itemCount: o.lines.reduce((s, l) => s + l.quantity, 0),
+      createdAt: o.createdAt,
+    })),
+    pagination: { page, pageSize: PAGE_SIZE, totalItems, totalPages: Math.ceil(totalItems / PAGE_SIZE) },
+  };
+}
+
+/**
+ * One order of the customer. Filtering by id AND customerId means another customer's order
+ * is indistinguishable from a missing one: both return 404 (BR-08).
+ */
+export async function getCustomerOrder(customerId: number, orderId: number) {
+  const order = await prisma.order.findFirst({ where: { id: orderId, customerId }, include: detailInclude });
+  if (!order) throw new HttpError(404, "NOT_FOUND", "Order not found.");
+  return serializeOrder(order);
+}

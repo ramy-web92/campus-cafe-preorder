@@ -1,5 +1,5 @@
 // TEST-O01..TEST-O08 — docs/sprints/sprint-1/sts.md (AC-11..AC-18)
-// (TEST-O10..O12 for F-05 are added by issue #7.)
+// TEST-O10..O12 (F-05, AC-20..AC-22) at the end of the file.
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { prisma } from "../../src/prisma.js";
 import { sessionStore } from "../../src/http/session.js";
@@ -133,5 +133,38 @@ describe("Order numbers", () => {
     const [, dayB, seqB] = b.body.order.orderNumber.match(re);
     expect(dayB).toBe(dayA);
     expect(Number(seqB)).toBe(Number(seqA) + 1);
+  });
+});
+
+describe("F-05 — my orders and order detail", () => {
+  it("TEST-O10 lists only the customer's own orders, newest first (AC-20)", async () => {
+    const res = await alice.get("/api/orders");
+    expect(res.status).toBe(200);
+    const ids = res.body.orders.map((o: any) => o.id);
+    const own = await prisma.order.findMany({ where: { customerId: aliceId }, orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 10 });
+    expect(ids).toEqual(own.map((o) => o.id));
+    expect(res.body.pagination).toMatchObject({ page: 1, pageSize: 10, totalItems: await prisma.order.count({ where: { customerId: aliceId } }) });
+
+    const bobsOrders = await prisma.order.findMany({ where: { customerId: bobId }, select: { id: true } });
+    expect(bobsOrders.length).toBeGreaterThan(0);
+    for (const b of bobsOrders) expect(ids).not.toContain(b.id);
+  });
+
+  it("TEST-O11 returns the stored detail: lines, totals, status and history (AC-21)", async () => {
+    const created = await submit({ lines: [{ menuItemId: id["Iced Latte"], quantity: 2 }, { menuItemId: id["Croissant"], quantity: 1 }], note: "Pick up at 10" });
+    const res = await alice.get(`/api/orders/${created.body.order.id}`);
+    expect(res.status).toBe(200);
+    expect(res.body.order).toEqual(created.body.order);
+    expect(res.body.order.history).toEqual([expect.objectContaining({ fromStatus: null, toStatus: "SUBMITTED", actorName: "Alice Customer" })]);
+  });
+
+  it("TEST-O12 hides another customer's order and a missing order behind the same 404 (AC-22)", async () => {
+    const bobOrder = await prisma.order.findFirstOrThrow({ where: { customerId: bobId } });
+    const other = await alice.get(`/api/orders/${bobOrder.id}`);
+    const missing = await alice.get("/api/orders/99999999");
+    for (const res of [other, missing]) {
+      expect(res.status).toBe(404);
+      expect(res.body).toEqual({ error: { code: "NOT_FOUND", message: "Order not found." } });
+    }
   });
 });
