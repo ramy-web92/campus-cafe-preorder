@@ -94,3 +94,24 @@ export const ordersApi = {
 export function formatTHB(satang: number): string {
   return `${(satang / 100).toFixed(2)} THB`;
 }
+
+// ---------------------------------------------------------------------------
+// My orders (F-05)
+
+export interface OrderSummary {
+  id: number;
+  orderNumber: string;
+  status: string;
+  totalSatang: number;
+  itemCount: number;
+  createdAt: string;
+}
+export interface Page<T> {
+  orders: T[];
+  pagination: { page: number; pageSize: number; totalItems: number; totalPages: number };
+}
+
+export const myOrdersApi = {
+  list: (page = 1) => api<Page<OrderSummary>>(`/api/orders?page=${page}`),
+  get: (id: number) => api<{ order: OrderDetail }>(`/api/orders/${id}`).then((r) => r.order),
+};

@@ -1,14 +1,25 @@
 // Application shell: current user, role-based home, header with logout (F-01).
-import { useEffect, useState } from "react";
-import { CurrentUser, authApi } from "./api.js";
+import { useCallback, useEffect, useState } from "react";
+import { CurrentUser, authApi, myOrdersApi } from "./api.js";
 import Login from "./Login.js";
 import Menu from "./Menu.js";
+import MyOrders from "./MyOrders.js";
+import OrderDetailPage from "./OrderDetail.js";
 
 const ROLE_LABELS = { CUSTOMER: "Customer", OPERATOR: "Operator" } as const;
 
 export default function App() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [checking, setChecking] = useState(true);
+  // Customer screens (F-03..F-05)
+  const [view, setView] = useState<"menu" | "orders" | "detail">("menu");
+  const [orderId, setOrderId] = useState<number | null>(null);
+  const loadCustomerOrder = useCallback(() => myOrdersApi.get(orderId!), [orderId]);
+
+  function openOrder(id: number) {
+    setOrderId(id);
+    setView("detail");
+  }
 
   useEffect(() => {
     authApi
@@ -23,6 +34,7 @@ export default function App() {
       await authApi.logout();
     } finally {
       setUser(null);
+      setView("menu");
     }
   }
 
@@ -49,7 +61,21 @@ export default function App() {
         ) : !user ? (
           <Login onLoggedIn={setUser} />
         ) : user.role === "CUSTOMER" ? (
-          <Menu />
+          <>
+            <nav aria-label="Customer" className="mb-3">
+              <ul className="nav nav-pills gap-1">
+                <li className="nav-item">
+                  <button className={`nav-link ${view === "menu" ? "active" : ""}`} aria-current={view === "menu" ? "page" : undefined} onClick={() => setView("menu")}>Menu</button>
+                </li>
+                <li className="nav-item">
+                  <button className={`nav-link ${view !== "menu" ? "active" : ""}`} aria-current={view !== "menu" ? "page" : undefined} onClick={() => setView("orders")}>My orders</button>
+                </li>
+              </ul>
+            </nav>
+            {view === "menu" && <Menu onOrderPlaced={(o) => openOrder(o.id)} />}
+            {view === "orders" && <MyOrders onOpen={openOrder} onBrowseMenu={() => setView("menu")} />}
+            {view === "detail" && orderId && <OrderDetailPage load={loadCustomerOrder} onBack={() => setView("orders")} backLabel="← My orders" />}
+          </>
         ) : (
           <section aria-labelledby="home-title">
             <h2 id="home-title" className="h5">Order queue</h2>

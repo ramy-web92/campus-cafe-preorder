@@ -18,6 +18,8 @@ export const PROTECTED_ROUTES: Array<[method: "get" | "post", path: string]> = [
   ["post", "/api/auth/logout"],
   ["get", "/api/menu"],
   ["post", "/api/orders"],
+  ["get", "/api/orders"],
+  ["get", "/api/orders/1"],
 ];
 
 describe("TEST-S01 — protected routes reject anonymous requests (AC-05, NFR-01)", () => {
@@ -38,6 +40,15 @@ describe("TEST-S02 — role restrictions enforced by the backend (AC-19)", () =>
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe("FORBIDDEN");
     expect(await prisma.order.count()).toBe(before);
+  });
+});
+
+describe("TEST-S02 — Customer-only order endpoints (AC-22)", () => {
+  it("an Operator calling the customer order endpoints gets 403", async () => {
+    const olivia = await loginAs(USERS.olivia);
+    const order = await prisma.order.findFirstOrThrow();
+    expect((await olivia.get("/api/orders")).status).toBe(403);
+    expect((await olivia.get(`/api/orders/${order.id}`)).status).toBe(403);
   });
 });
 
