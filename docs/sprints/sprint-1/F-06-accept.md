@@ -1,6 +1,6 @@
 # F-06 Operator order queue and accept
 
-**Requirements:** FR-08, FR-09, BR-06 (accept), BR-07, BR-09, BR-11 · **Issue:** #7 · **Depends on:** F-02, F-04 · **Version:** 1.0
+**Requirements:** FR-08, FR-09, BR-06 (accept), BR-07, BR-09, BR-11 · **Issue:** #8 · **Depends on:** F-02, F-04 · **Version:** 1.1
 
 ## Feature SDS
 - **Queue:** Operators list orders filtered by status (default `SUBMITTED`), oldest first (first come, first served), with customer name, number, item count, total and age.
@@ -37,3 +37,4 @@ Uses `Order.status`, `acceptedAt`, `version` and `OrderStatusChange` (F-16). No 
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-05 | Initial contract |
+| 1.1 | 2026-11-07 | Corrected the Issue number (the baseline PR took #1, so issues are #2–#9). No behavior change. |

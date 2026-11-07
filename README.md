@@ -60,6 +60,26 @@ npm run dev                     # http://localhost:5173
 npm test                        # UI component tests
 ```
 
+## 4. End-to-end tests
+
+Run from the repository root (both servers are started automatically; the **test** database is reset and seeded first):
+
+```bash
+npm install
+npx playwright install chromium   # first time only
+npm run test:e2e
+```
+
+Screenshots of the demonstrated journeys are written to `artifacts/sprint-1/screenshots/`.
+
+## Test commands summary
+
+| Suite | Command | Database |
+|---|---|---|
+| Server unit + API/DB integration | `cd server && npm test` | `cafe_test` (reset + seed before the run) |
+| Client UI components | `cd client && npm test` | none (API mocked) |
+| End-to-end (browser → API → DB) | `npm run test:e2e` (root) | `cafe_test` (reset + seed before the run) |
+
 ## Demo accounts (local seed only)
 
 All seeded accounts use the synthetic password printed by the seed (`Cafe1234!`). These are local demo accounts with fake data, not real credentials.

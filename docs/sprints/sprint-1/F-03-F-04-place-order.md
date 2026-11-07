@@ -1,6 +1,6 @@
 # F-03 Menu browsing · F-04 Place order
 
-**Requirements:** FR-04, FR-05, BR-01, BR-02, BR-03, BR-04, BR-05, BR-15, NFR-05 · **Issue:** #5 · **Depends on:** F-01, F-02, F-16 · **Version:** 1.0
+**Requirements:** FR-04, FR-05, BR-01, BR-02, BR-03, BR-04, BR-05, BR-15, NFR-05 · **Issue:** #6 · **Depends on:** F-01, F-02, F-16 · **Version:** 1.1
 
 ## Feature SDS
 - **Menu (F-03):** returns all categories (by `sortOrder`) with their items, including sold-out items flagged `isAvailable: false` so the customer understands why they cannot be added.
@@ -65,3 +65,4 @@ Uses Order, OrderLine, OrderStatusChange and MenuItem (F-16). No new migration.
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-05 | Initial contract |
+| 1.1 | 2026-11-07 | Corrected the Issue number (the baseline PR took #1, so issues are #2–#9). No behavior change. |

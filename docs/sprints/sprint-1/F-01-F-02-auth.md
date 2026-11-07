@@ -1,6 +1,6 @@
 # F-01 Authentication and session · F-02 Role and ownership access control
 
-**Requirements:** FR-01, FR-02, FR-03, BR-17, NFR-01, NFR-02, NFR-03, NFR-04, NFR-06 · **Issue:** #4 · **Depends on:** F-16 · **Version:** 1.0
+**Requirements:** FR-01, FR-02, FR-03, BR-17, NFR-01, NFR-02, NFR-03, NFR-04, NFR-06 · **Issue:** #5 · **Depends on:** F-16 · **Version:** 1.1
 
 ## Feature SDS
 - **Login:** the user submits e-mail and password. The server looks up the user by lower-cased e-mail, rejects inactive users, and compares the password with the bcrypt hash. On success it regenerates the session, stores `userId` and `role`, and returns the safe profile.
@@ -40,3 +40,4 @@ Uses `User` and `session` from F-16; no new migration.
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-05 | Initial contract |
+| 1.1 | 2026-11-07 | Corrected the Issue number (the baseline PR took #1, so issues are #2–#9). No behavior change. |
