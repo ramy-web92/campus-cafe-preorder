@@ -1,0 +1,77 @@
+# Local stack: PostgreSQL + migration/seed job + API + web app.
+#   cp .env.example .env   (fill in your own local values)
+#   docker compose up --build -d
+#   Web app: http://localhost:5173   API: http://localhost:3000/api/health
+# Secrets come from the root .env (never committed); compose stops with an error if one is missing.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: cafe-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cafe}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-cafe}
+    ports:
+      - "5433:5432" # 5433 on the host so it does not clash with a local PostgreSQL
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cafe} -d ${POSTGRES_DB:-cafe}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: cafe-migrate
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cafe}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-cafe}?schema=public
+      SEED_DEMO_DATA: "true"
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:?Set DEMO_USER_PASSWORD in .env}
+    command: ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed"]
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: cafe-server
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      TZ: Asia/Bangkok
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cafe}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-cafe}?schema=public
+      SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET in .env}
+      COOKIE_SECURE: "false" # plain http on localhost
+      STATIC_DIR: "" # the client container serves the SPA locally
+    ports:
+      - "3000:3000"
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ""
+    container_name: cafe-client
+    restart: unless-stopped
+    depends_on:
+      - server
+    ports:
+      - "5173:80"
+
+volumes:
+  postgres_data:

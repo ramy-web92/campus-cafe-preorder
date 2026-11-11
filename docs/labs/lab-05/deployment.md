@@ -38,6 +38,7 @@ No real value is committed. Local values live in `server/.env`, `server/.env.tes
 | `NODE_ENV` | server, seed | `development` / `test` / `production` | No | `.env` | `production` (Dockerfile) |
 | `PORT` | server | Listening port | No | `3000` | set by Cloud Run (3000) |
 | `CORS_ORIGIN` | server | Allowed origins when the client runs elsewhere (Vite dev) | No | default `http://localhost:5173` | empty (same origin) |
+| `COOKIE_SECURE` | server | HTTPS-only session cookie | No | default `false` outside production | default `true` (production); `false` only in docker-compose |
 | `STATIC_DIR` | server | Folder of the built SPA | No | not set (Vite dev server) | default `../client/dist` in the image |
 | `VITE_API_URL` | client build | API base URL | No | `http://localhost:3000` | empty at image build (same origin) |
 
@@ -53,6 +54,32 @@ No real value is committed. Local values live in `server/.env`, `server/.env.tes
 | Build | `cd server && npm run build` · `cd client && npm run build` |
 | Test | `cd server && npm test` · `cd client && npm test` · root: `npm run test:e2e` |
 | Health / readiness | `GET /api/health` · `GET /api/ready` |
+
+### Docker (Episode 3)
+
+| File | Role |
+|---|---|
+| `Dockerfile` (root) | Production image used by CI and Cloud Run: builds the client, builds the API, runtime stage as the non-root `node` user, serves API + SPA on port 3000 |
+| `.dockerignore` | Keeps `node_modules`, builds, `.env` files, Git data and test output out of the build context |
+| `docker-compose.yml` | Local stack: `db` (PostgreSQL 16 with a volume), `migrate` (migrations + seed, runs once), `server` (API, :3000), `client` (nginx, :5173) |
+| `server/Dockerfile`, `client/Dockerfile`, `client/nginx.conf` | Images used only by docker-compose |
+| `server/docker-entrypoint.sh` | Starts the server only (`exec "$@"`) |
+| `.env.example` (root) | Local values for docker-compose (placeholders only) |
+| `.gitattributes` | Forces LF endings for `*.sh` so the scripts run in Linux containers when cloned on Windows |
+
+```bash
+cp .env.example .env              # PowerShell: Copy-Item .env.example .env — then replace the placeholders
+docker compose up --build -d
+docker compose ps -a              # db, server, client running; migrate "exited (0)"
+curl --fail http://localhost:3000/api/health
+curl --fail http://localhost:3000/api/ready
+docker compose down               # stop, keep the data
+docker compose up -d              # data is still there (volume postgres_data)
+docker compose down -v            # stop and delete the data
+docker build -t cafe .            # the production image alone (what CI and Cloud Run use)
+```
+
+PostgreSQL is published on host port **5433** so it does not clash with a PostgreSQL already installed on the laptop.
 
 ## 4. GCP project and resources (planned, created in Ep. 5)
 

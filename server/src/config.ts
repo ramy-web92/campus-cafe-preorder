@@ -18,6 +18,9 @@ export const config = {
     .split(",")
     .map((o) => o.trim())
     .filter(Boolean),
+  // Secure (HTTPS-only) session cookie. Default: on in production. docker-compose sets false because
+  // the local stack is served over plain http://localhost.
+  cookieSecure: (process.env.COOKIE_SECURE ?? String(isProduction)).toLowerCase() === "true",
   sessionSecret: isProduction ? required("SESSION_SECRET") : process.env.SESSION_SECRET ?? "dev-only-secret",
   // Built React app served by Express in the container (empty = do not serve static files).
   staticDir: process.env.STATIC_DIR ?? (isProduction ? path.resolve(process.cwd(), "../client/dist") : ""),
