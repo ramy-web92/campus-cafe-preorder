@@ -81,6 +81,18 @@ docker build -t cafe .            # the production image alone (what CI and Clou
 
 PostgreSQL is published on host port **5433** so it does not clash with a PostgreSQL already installed on the laptop.
 
+### Continuous integration (Episode 4)
+
+Workflow `.github/workflows/ci-docker.yml` ("CI & Docker Build"), job **`test-and-docker`** (the required check for the `main` ruleset in Episode 6). It runs on every Pull Request into `staging` and `main`, by hand, and is reused by the deploy workflow (Episode 7):
+
+1. syntax check and offline tests of `deploy/` scripts (no GCP access);
+2. server: `npm ci`, then `npm test` (migrations + seed on a temporary PostgreSQL service, then unit and API/DB tests);
+3. client: `npm ci`, `npm test`, `npm run build`;
+4. end-to-end: Playwright against the real client, API and database;
+5. `docker build` of the production image (not pushed).
+
+The CI database credentials and the CI demo password are throw-away values for the temporary database of the job, not real secrets.
+
 ## 4. GCP project and resources (planned, created in Ep. 5)
 
 | Item | Value |
