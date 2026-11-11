@@ -82,7 +82,7 @@ Screenshots of the demonstrated journeys are written to `artifacts/sprint-1/scre
 
 ## Demo accounts (local seed only)
 
-All seeded accounts use the synthetic password printed by the seed (`Cafe1234!`). These are local demo accounts with fake data, not real credentials.
+All demo accounts use the password you put in `DEMO_USER_PASSWORD` (server `.env` / `.env.test`). The seed never prints it, and it is never written in the code. In the cloud it comes from Secret Manager and is shared privately with the Lab 6 partner team.
 
 | Role | E-mail | Notes |
 |---|---|---|

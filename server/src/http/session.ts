@@ -31,7 +31,7 @@ export const sessionMiddleware = session({
   cookie: {
     httpOnly: true,
     sameSite: "lax",
-    secure: config.isProduction,
+    secure: config.cookieSecure,
     maxAge: EIGHT_HOURS_MS,
   },
 });

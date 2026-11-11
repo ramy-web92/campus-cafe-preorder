@@ -1,6 +1,10 @@
 // End-to-end tests: real browser → React client → Express API → PostgreSQL test database.
 // `npm run test:e2e` resets and seeds cafe_test first (pretest:e2e), then starts both servers.
 import { defineConfig, devices } from "@playwright/test";
+import dotenv from "dotenv";
+
+// Same settings as the server tests (DATABASE_URL, DEMO_USER_PASSWORD) — never committed.
+dotenv.config({ path: "server/.env.test" });
 
 export default defineConfig({
   testDir: "./e2e",
