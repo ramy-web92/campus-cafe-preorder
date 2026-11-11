@@ -2,7 +2,9 @@
 import request from "supertest";
 import { app } from "../../src/app.js";
 
-export const DEMO_PASSWORD = "Cafe1234!";
+// Same value as the one the seed used for the test database (server/.env.test or the CI env).
+export const DEMO_PASSWORD = process.env.DEMO_USER_PASSWORD ?? "";
+if (!DEMO_PASSWORD) throw new Error("DEMO_USER_PASSWORD is not set for the tests (see server/.env.test.example).");
 export const USERS = {
   alice: "alice@cafe.test",
   bob: "bob@cafe.test",

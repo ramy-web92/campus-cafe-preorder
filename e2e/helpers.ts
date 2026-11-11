@@ -1,7 +1,7 @@
 import { Page, expect } from "@playwright/test";
 import pg from "pg";
 
-export const PASSWORD = "Cafe1234!"; // synthetic local seed password
+export const PASSWORD = process.env.DEMO_USER_PASSWORD ?? ""; // from server/.env.test (loaded by playwright.config.ts)
 export const API = "http://localhost:3000";
 export const SHOTS = "artifacts/sprint-1/screenshots";
 

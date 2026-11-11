@@ -1,5 +1,8 @@
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
+import fs from "node:fs";
+import path from "node:path";
+import { prisma } from "./prisma.js";
 import { config } from "./config.js";
 import { HttpError, sendError } from "./http/errors.js";
 import { sessionMiddleware } from "./http/session.js";
@@ -11,12 +14,22 @@ import { operatorRouter } from "./routes/operatorRoutes.js";
 export const app = express();
 
 if (config.isProduction) app.set("trust proxy", 1); // secure cookies behind the Cloud Run proxy
-app.use(cors({ origin: config.clientOrigin, credentials: true }));
+if (config.corsOrigins.length > 0) app.use(cors({ origin: config.corsOrigins, credentials: true }));
 app.use(express.json({ limit: "100kb" }));
 app.use(sessionMiddleware);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
+});
+
+// Readiness: the smoke test calls it after every deploy; 503 when the database cannot be reached.
+app.get("/api/ready", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ready", db: "connected" });
+  } catch {
+    res.status(503).json({ status: "not_ready" });
+  }
 });
 
 app.use(authRouter);
@@ -28,6 +41,14 @@ app.use(operatorRouter);
 if (process.env.NODE_ENV === "test") {
   app.get("/api/__test__/boom", () => {
     throw new Error("Simulated failure: SELECT * FROM secret_table at line 42");
+  });
+}
+
+// In the container the same server serves the built React app (one origin, one Cloud Run service).
+if (config.staticDir && fs.existsSync(path.join(config.staticDir, "index.html"))) {
+  app.use(express.static(config.staticDir, { index: false, maxAge: "1h" }));
+  app.get(/^\/(?!api\/).*/, (_req, res) => {
+    res.sendFile(path.join(config.staticDir, "index.html"));
   });
 }
 
