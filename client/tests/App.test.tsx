@@ -26,6 +26,12 @@ describe("App shell and login", () => {
     expect(screen.getByRole("heading", { name: /KMUTT Café Pre-Order/i })).toBeInTheDocument();
   });
 
+  it("shows the opening hours in the footer (Lab 5 release proof)", async () => {
+    vi.mocked(api.authApi.me).mockRejectedValueOnce({ status: 401 });
+    render(<App />);
+    expect(await screen.findByRole("contentinfo")).toHaveTextContent("Open 08:00–18:00");
+  });
+
   it("shows a generic error on invalid credentials and keeps the e-mail", async () => {
     const user = userEvent.setup();
     vi.mocked(api.authApi.me).mockRejectedValueOnce({ status: 401 });
