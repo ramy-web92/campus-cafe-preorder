@@ -86,6 +86,9 @@ export default function App() {
           )
         )}
       </main>
+      <footer className="mt-5 pt-3 border-top small text-muted text-center">
+        KMUTT Café Pre-Order · Order ahead, pick up at the counter · Open 08:00–18:00
+      </footer>
     </div>
   );
 }
