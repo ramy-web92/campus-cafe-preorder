@@ -1,6 +1,6 @@
 # Lab 5 — Deployment of KMUTT Café Pre-Order
 
-> Version 1 (Episode 2, cloud-ready). Completed in later Lab 5 Issues: Docker (Ep. 3), CI (Ep. 4), GCP resources (Ep. 5), release procedure (Ep. 7).
+> Version 2 (end of Lab 5). Live service: https://cafe-rgydhkolpq-as.a.run.app (Cloud Run `cafe`, region `asia-southeast1`, project `cpe334-sec31-cafe`).
 
 ## 1. Stack and changes from the reference
 
@@ -93,18 +93,52 @@ Workflow `.github/workflows/ci-docker.yml` ("CI & Docker Build"), job **`test-an
 
 The CI database credentials and the CI demo password are throw-away values for the temporary database of the job, not real secrets.
 
-## 4. GCP project and resources (planned, created in Ep. 5)
+## 4. GCP project and resources (created in Episode 5 with `deploy/deploy.sh --demo`)
 
 | Item | Value |
 |---|---|
-| Project ID | `cpe334-sec31-cafe` (final ID written here once the project exists) |
+| Project ID | `cpe334-sec31-cafe` (Free Trial billing account, alerts-only budget `CPE334-Alert`: 50 €, 50% and 100%, credits excluded) |
 | Region | `asia-southeast1` |
-| Artifact Registry repository | `cafe` |
-| Cloud SQL instance / database / user | `cafe-pg` / `cafe` / `cafe` |
-| Cloud Run service / migration job | `cafe` / `cafe-migrate` |
-| Runtime service account | `cafe-runner` |
-| Secrets | `cafe-database-url`, `cafe-session-secret`, `cafe-demo-password` |
+| Public URL | https://cafe-rgydhkolpq-as.a.run.app |
+| Cloud Run service | `cafe`: public, port 3000, 0 to 3 instances, 512 MiB, runs as `cafe-runner` |
+| Migration job | `cafe-migrate`: `npx prisma migrate deploy && npx prisma db seed` (`SEED_DEMO_DATA=true` for Lab 6 UAT) |
+| Cloud SQL | instance `cafe-pg` (PostgreSQL 16, `db-f1-micro`, 10 GB, storage auto-increase off, daily backup 03:00), database `cafe`, user `cafe` |
+| Artifact Registry | repository `cafe`, image `cafe`, tagged with the full commit SHA |
+| Secret Manager | `cafe-database-url`, `cafe-session-secret`, `cafe-demo-password` (values never printed; each readable only by `cafe-runner`) |
+| Runtime service account | `cafe-runner`: Cloud SQL Client on the project, Secret Accessor on the three secrets only |
+| Deployer service account | `cafe-deployer`: Cloud Run Developer, Artifact Registry Writer on `cafe` only, Service Account User on `cafe-runner` only; **no key** |
+| GitHub → GCP sign-in | Workload Identity Federation: pool `github-actions`, provider `github-main`, accepted only for this repository (id 1447054111, owner 308529506), branch `main`, workflow `deploy.yml`, environment `demo` |
+| GitHub environment `demo` | deployments from `main` only; variables `GCP_PROJECT_ID`, `GCP_REGION`, `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT` (no secret needed) |
+| Ruleset `protect-main` | active, no bypass: PR required with 1 approval, required check `test-and-docker`, branch up to date, no force push or deletion |
+
+Data that must survive (orders, order lines, status history, users, sessions) is stored in Cloud SQL. Nothing is written to the container disk, so data survives restarts, redeploys and rollbacks (checked in Episode 8).
 
 ## 5. Release procedure
 
-Written in Episode 7 (deploy workflow, commit SHA of the running revision, rollback).
+Only `main` deploys, so every merge into `main` is a release. Nobody types a deploy command.
+
+1. **Issue**: create an Issue with the label `lab5`, assign the author, add it to the board.
+2. **Feature branch from `staging`**: `git checkout staging && git pull && git checkout -b <type>/<name>`. If `staging` is behind `main` (after a release merge commit), first run `git merge origin/main` on `staging` and push.
+3. **Pull Request into `staging`**: `Part of #<issue>`, label `lab5`. CI `test-and-docker` must be green. The **other** student reviews with a specific comment and approves; then merge.
+4. **Release Pull Request `staging` → `main`**: CI must be green and the other student must approve (enforced by `protect-main`). Merge with a merge commit.
+5. **Automatic deployment** (`.github/workflows/deploy.yml`, "Deploy demo"): reuses CI (`test-and-docker`) → signs in to GCP without a key → builds and pushes `cafe/cafe:<full commit SHA>` → `deploy/release.sh` (resolves the image digest, runs `cafe-migrate`, then updates the service and sends 100% of traffic to the new revision; a failed migration stops the release before the service changes) → `deploy/smoke_test.py` on the public URL → run summary.
+6. **Check which commit is running**: the run summary shows "Commit image tag" (the full SHA of the merge commit on `main`) and the image digest. The same tag is listed by
+   `gcloud artifacts docker tags list asia-southeast1-docker.pkg.dev/cpe334-sec31-cafe/cafe/cafe`
+   and the Cloud Run revision uses that digest (Cloud Run → `cafe` → Revisions).
+7. **Close the Issue** with the PR links, the run link and the URL.
+
+### Rollback and roll-forward
+
+Actions → Deploy demo → **Run workflow** → branch `main`, `image_tag` = the full 40-character commit SHA of an image that already exists (copy it from the "Commit image tag" of an earlier successful run). Tests, build and migration are skipped; the service is pointed back to that image and the smoke test runs. A rollback changes only the application image; it never rolls back the database. To roll forward, run it again with the newer SHA (or merge a new release).
+
+Releases deployed during Lab 5:
+
+| Release | Commit | How | Result |
+|---|---|---|---|
+| A: deploy workflow | `917adbb5ad04d49e5ea25927d53c4e6d139069d4` | release PR #33 → Deploy demo run #1 | first keyless automatic deploy, smoke test passed |
+| B: footer with opening hours | `68eb45876841d12522b92daae40ca9abb7e7d535` | release PR #35 → Deploy demo run #2 | footer visible online |
+| Rollback to A, then roll-forward to B | same SHAs | Run workflow with `image_tag` | data unchanged (Episode 8) |
+
+### Cost control
+
+Cloud SQL is billed per hour even with no traffic; Cloud Run scales to zero. Budget alert `CPE334-Alert`. Never click Upgrade. Pause or tear down only when the instructor announces the end of grading (Student Guide Episodes 9–10).
