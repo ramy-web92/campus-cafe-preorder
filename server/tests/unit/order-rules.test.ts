@@ -79,3 +79,11 @@ describe("TEST-U04 — order number format (AC-18, BR-15)", () => {
     expect(formatOrderNumber(new Date("2026-11-05T03:00:00Z"), 123)).toBe("ORD-20261105-0123");
   });
 });
+
+describe("TEST-U07 — regression for Lab 6 Part D defect DEF-D01 (AC-16, BR-04)", () => {
+  it("rejects an order with an empty lines array", () => {
+    const { value, errors } = validateOrderInput({ lines: [], note: "nothing else" });
+    expect(value).toBeUndefined();
+    expect(errors.lines).toBe("An order must have 1 to 20 lines.");
+  });
+});
