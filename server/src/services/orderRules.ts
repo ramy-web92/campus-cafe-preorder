@@ -15,7 +15,7 @@ export function validateOrderInput(body: unknown): { value?: { lines: LineInput[
   const errors: FieldErrors = {};
   const raw = (body ?? {}) as { lines?: unknown; note?: unknown };
 
-  if (!Array.isArray(raw.lines) || raw.lines.length < 1 || raw.lines.length > MAX_LINES) {
+  if (!Array.isArray(raw.lines) || raw.lines.length > MAX_LINES) {
     errors.lines = `An order must have 1 to ${MAX_LINES} lines.`;
     return { errors };
   }

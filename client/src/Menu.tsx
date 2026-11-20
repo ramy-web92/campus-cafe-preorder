@@ -43,7 +43,7 @@ export default function Menu({ onOrderPlaced }: { onOrderPlaced?: (order: OrderD
   }
 
   async function placeOrder() {
-    if (submitting || cartLines.length === 0) return;
+    if (submitting) return;
     setSubmitting(true);
     setBanner("");
     setLineErrors({});
@@ -132,7 +132,12 @@ export default function Menu({ onOrderPlaced }: { onOrderPlaced?: (order: OrderD
             )}
             {banner && <div className="alert alert-warning py-2" role="alert">{banner}</div>}
             {cartLines.length === 0 ? (
-              <p className="text-muted small mb-0">Your cart is empty. Add items from the menu.</p>
+              <>
+                <p className="text-muted small">Your cart is empty. Add items from the menu.</p>
+                <button className="btn btn-primary w-100" onClick={placeOrder} disabled={submitting}>
+                  {submitting ? "Placing order…" : "Place order"}
+                </button>
+              </>
             ) : (
               <>
                 <ul className="list-unstyled">
