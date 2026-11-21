@@ -43,6 +43,19 @@ describe("Menu and cart", () => {
     expect(screen.getByRole("button", { name: "Increase Iced Latte" })).toBeDisabled();
   });
 
+  it("UI-03 offers no Place order button while the cart is empty and never calls the API (DEF-D01, AC-16)", async () => {
+    const user = userEvent.setup();
+    render(<Menu />);
+    expect(await screen.findByText(/your cart is empty/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Place order" })).not.toBeInTheDocument();
+    // add then remove the only item: back to an empty cart, still no button
+    await user.click(screen.getByRole("button", { name: "Add Iced Latte" }));
+    expect(screen.getByRole("button", { name: "Place order" })).toBeEnabled();
+    await user.click(screen.getByRole("button", { name: "Remove" }));
+    expect(screen.queryByRole("button", { name: "Place order" })).not.toBeInTheDocument();
+    expect(api.ordersApi.create).not.toHaveBeenCalled();
+  });
+
   it("UI-02 shows the sold-out message on the line and keeps the cart on 422 (AC-17)", async () => {
     const user = userEvent.setup();
     vi.mocked(api.ordersApi.create).mockRejectedValueOnce({

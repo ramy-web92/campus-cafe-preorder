@@ -109,6 +109,15 @@ describe("POST /api/orders — rejected orders store nothing", () => {
     expect(await rowCounts()).toEqual(before);
   });
 
+  it("TEST-O13 refuses an empty order with 422 and stores no order, line or history (DEF-D01, AC-16)", async () => {
+    const before = await rowCounts();
+    const res = await submit({ lines: [], note: "empty cart" });
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe("VALIDATION_ERROR");
+    expect(res.body.error.details.fields.lines).toBe("An order must have 1 to 20 lines.");
+    expect(await rowCounts()).toEqual(before);
+  });
+
   it("TEST-O07 rejects a sold-out or unknown item and stores no order, line or history (AC-17, NFR-05)", async () => {
     const before = await rowCounts();
     const soldOut = await submit({ lines: [{ menuItemId: id["Espresso"], quantity: 1 }, { menuItemId: id["Mocha"], quantity: 1 }] });
