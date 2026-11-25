@@ -1,7 +1,7 @@
 # CR-01 — Line quantity limit 1–10 → 1–5 (Lab 7)
 
 **Status:** Proposed — waiting for instructor/TA approval · **Requested by:** Rémy FAHS · **Reviewer:** Maxime DARWICHE · **Date:** 2026-11-25
-**Issue:** #TBD · **Approval:** _approver, date and message reference are added here when received_
+**Issue:** #47 · **Approval:** _approver, date and message reference are added here when received_
 
 ## 1. Versions
 
