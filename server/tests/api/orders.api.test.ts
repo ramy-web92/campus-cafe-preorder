@@ -194,8 +194,10 @@ describe("Orders stored before CR-01 (AC-15a)", () => {
     expect(detail.status).toBe(200);
     expect(detail.body.order.totalSatang).toBe(45000);
     expect(detail.body.order.lines[0]).toMatchObject({ quantity: 10, lineTotalSatang: 45000 });
-    const mine = await alice.get("/api/orders");
-    expect(mine.body.orders.map((o: any) => o.id)).toContain(stored.id);
+    // My orders is newest first and paginated: the old order is on the last page
+    const first = await alice.get("/api/orders");
+    const last = await alice.get(`/api/orders?page=${first.body.pagination.totalPages}`);
+    expect(last.body.orders.map((o: any) => o.id)).toContain(stored.id);
 
     const olivia = await loginAs(USERS.olivia);
     const queue = await olivia.get("/api/operator/orders");
