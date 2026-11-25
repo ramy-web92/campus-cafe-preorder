@@ -76,20 +76,21 @@ describe("POST /api/orders — valid orders", () => {
     expect(stored.totalSatang).toBe(11000);
   });
 
-  it("TEST-O05 accepts the boundary quantities 1 and 10 (AC-15)", async () => {
-    const res = await submit({ lines: [{ menuItemId: id["Espresso"], quantity: 1 }, { menuItemId: id["Croissant"], quantity: 10 }] });
+  // TEST-O05 revised by CR-01 (Lab 7): upper boundary 5 (was 10)
+  it("TEST-O05 accepts the boundary quantities 1 and 5 (AC-15 rev. CR-01)", async () => {
+    const res = await submit({ lines: [{ menuItemId: id["Espresso"], quantity: 1 }, { menuItemId: id["Croissant"], quantity: 5 }] });
     expect(res.status).toBe(201);
-    expect(res.body.order.totalSatang).toBe(4500 + 45000);
+    expect(res.body.order.totalSatang).toBe(4500 + 22500);
   });
 });
 
 describe("POST /api/orders — rejected orders store nothing", () => {
-  it.each([0, 11, 1.5, -1, "2"])("TEST-O05 rejects quantity %s with 422 (AC-15)", async (quantity) => {
+  it.each([0, 6, 10, 11, 1.5, -1, "2"])("TEST-O05 rejects quantity %s with 422 (AC-15 rev. CR-01)", async (quantity) => {
     const before = await rowCounts();
     const res = await submit({ lines: [{ menuItemId: id["Espresso"], quantity }] });
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe("VALIDATION_ERROR");
-    expect(res.body.error.details.fields["lines[0].quantity"]).toBeDefined();
+    expect(res.body.error.details.fields["lines[0].quantity"]).toBe("Quantity must be an integer from 1 to 5.");
     expect(await rowCounts()).toEqual(before);
   });
 
@@ -175,5 +176,34 @@ describe("F-05 — my orders and order detail", () => {
       expect(res.status).toBe(404);
       expect(res.body).toEqual({ error: { code: "NOT_FOUND", message: "Order not found." } });
     }
+  });
+});
+
+// TEST-O14 — CR-01 (Lab 7), AC-15a: orders stored before the change keep quantities 6–10
+describe("Orders stored before CR-01 (AC-15a)", () => {
+  it("TEST-O14 an order stored with quantity 10 stays readable, listed and acceptable", async () => {
+    const stored = await prisma.order.create({
+      data: {
+        orderNumber: "ORD-20260101-9910", customerId: aliceId, status: "SUBMITTED", totalSatang: 45000,
+        createdAt: new Date("2026-01-01T03:00:00Z"), // oldest, so it is on the first queue page
+        lines: { create: [{ menuItemId: id["Croissant"], itemName: "Croissant", unitPriceSatang: 4500, quantity: 10, lineTotalSatang: 45000 }] },
+        statusChanges: { create: [{ fromStatus: null, toStatus: "SUBMITTED", actorId: aliceId }] },
+      },
+    });
+    const detail = await alice.get(`/api/orders/${stored.id}`);
+    expect(detail.status).toBe(200);
+    expect(detail.body.order.totalSatang).toBe(45000);
+    expect(detail.body.order.lines[0]).toMatchObject({ quantity: 10, lineTotalSatang: 45000 });
+    // My orders is newest first and paginated: the old order is on the last page
+    const first = await alice.get("/api/orders");
+    const last = await alice.get(`/api/orders?page=${first.body.pagination.totalPages}`);
+    expect(last.body.orders.map((o: any) => o.id)).toContain(stored.id);
+
+    const olivia = await loginAs(USERS.olivia);
+    const queue = await olivia.get("/api/operator/orders");
+    expect(queue.body.orders.find((o: any) => o.id === stored.id)).toMatchObject({ itemCount: 10, totalSatang: 45000 });
+    const accepted = await olivia.post(`/api/operator/orders/${stored.id}/accept`);
+    expect(accepted.status).toBe(200);
+    expect(accepted.body.order.status).toBe("ACCEPTED");
   });
 });

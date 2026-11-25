@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ApiError, MenuCategory, MenuItem, OrderDetail, formatTHB, menuApi, ordersApi } from "./api.js";
 
 const MIN_QTY = 1;
-const MAX_QTY = 10;
+const MAX_QTY = 5; // BR-03 v1.1 (CR-01): same limit as the server
 
 export default function Menu({ onOrderPlaced }: { onOrderPlaced?: (order: OrderDetail) => void }) {
   const [categories, setCategories] = useState<MenuCategory[] | null>(null);

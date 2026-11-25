@@ -1,11 +1,11 @@
 # F-03 Menu browsing · F-04 Place order
 
-**Requirements:** FR-04, FR-05, BR-01, BR-02, BR-03, BR-04, BR-05, BR-15, NFR-05 · **Issue:** #6 · **Depends on:** F-01, F-02, F-16 · **Version:** 1.1
+**Requirements:** FR-04, FR-05, BR-01, BR-02, BR-03, BR-04, BR-05, BR-15, NFR-05 · **Issue:** #6 · **Depends on:** F-01, F-02, F-16 · **Version:** 1.2 (CR-01)
 
 ## Feature SDS
 - **Menu (F-03):** returns all categories (by `sortOrder`) with their items, including sold-out items flagged `isAvailable: false` so the customer understands why they cannot be added.
 - **Place order (F-04):** a Customer sends only `menuItemId` + `quantity` for each line and an optional note. In **one database transaction** the order service:
-  1. validates the shape: 1–20 lines, integer quantity 1–10, no duplicate `menuItemId`, note ≤ 200 characters (BR-03, BR-04);
+  1. validates the shape: 1–20 lines, integer quantity 1–5 (CR-01; 1–10 in Sprint 1), no duplicate `menuItemId`, note ≤ 200 characters (BR-03, BR-04);
   2. loads the referenced items and rejects the whole order if one is unknown or sold out (BR-05);
   3. computes `lineTotal = unitPrice × quantity` and `total = Σ lineTotal` from the database prices (BR-01);
   4. stores the order (status `SUBMITTED`, customer = session user) and its lines with snapshots of item name and unit price (BR-02);
@@ -35,12 +35,12 @@ Request  { "lines": [ { "menuItemId": 3, "quantity": 2 }, { "menuItemId": 9, "qu
 | `400 BAD_REQUEST` | Body is not JSON / `lines` missing or not an array |
 | `401 UNAUTHENTICATED` | No session |
 | `403 FORBIDDEN` | Operator |
-| `422 VALIDATION_ERROR` | `details.fields` e.g. `{ "lines[0].quantity": "Quantity must be an integer from 1 to 10." }`, `{ "lines": "An order must have 1 to 20 lines." }`, `{ "lines[1].menuItemId": "This item is already in the order." }` |
+| `422 VALIDATION_ERROR` | `details.fields` e.g. `{ "lines[0].quantity": "Quantity must be an integer from 1 to 5." }`, `{ "lines": "An order must have 1 to 20 lines." }`, `{ "lines[1].menuItemId": "This item is already in the order." }` |
 | `422 ITEM_UNAVAILABLE` | `details.items: [ { "menuItemId": 7, "name": "Matcha Latte" } ]` — sold out or unknown (unknown items report `name: null`) |
 
 ## UI specification — Menu & cart (Customer)
 - Categories as sections; each item shows name, description, price "65.00 THB" and an **Add** button; sold-out items show a "Sold out" badge (text, not color only) and a disabled button.
-- Cart panel (beside the menu on desktop, below on mobile): lines with − / + steppers limited to 1–10, Remove, optional note, **estimated** total labelled "Total (confirmed by the café on submit)".
+- Cart panel (beside the menu on desktop, below on mobile): lines with − / + steppers limited to 1–5 (the + button and the menu Add button are disabled at 5), Remove, optional note, **estimated** total labelled "Total (confirmed by the café on submit)".
 - **Place order:** disabled while the cart is empty or the request runs. On 201, go to the order detail with "Order placed". On 422, show the server message on the related line (e.g. "Matcha Latte is sold out") and **keep the cart**. Other errors show a banner with Retry.
 - States: loading skeleton for the menu, "The menu is empty" message, error banner.
 
@@ -55,7 +55,8 @@ Uses Order, OrderLine, OrderStatusChange and MenuItem (F-16). No new migration.
 | AC-12 | The stored line totals and order total equal the database prices × quantities (e.g. 2 × 65.00 + 1 × 45.00 = 175.00 THB). |
 | AC-13 | Given a request that also sends `unitPriceSatang: 1`, `totalSatang: 1`, `status: "ACCEPTED"` or another `customerId`, then the stored order uses the database prices, status `SUBMITTED` and the session customer. |
 | AC-14 | Given a submitted order, when the item price is later changed in the database, then the order's lines and total are unchanged. |
-| AC-15 | Quantity 1 and 10 are accepted; 0, 11, -1, 1.5 and "2" are rejected with 422 and no order is stored. |
+| AC-15 | *(revised by CR-01)* Quantity 1 and 5 are accepted; 0, 6, 10, 11, -1, 1.5 and "2" are rejected with 422 `VALIDATION_ERROR` (field error "Quantity must be an integer from 1 to 5.") and no order, line or history row is stored. Previous wording: "Quantity 1 and 10 are accepted; 0, 11, -1, 1.5 and \"2\" are rejected". |
+| AC-15a | *(new, CR-01)* An order stored before CR-01 with a line quantity from 6 to 10 is still returned unchanged (quantity, line total, order total) by the order detail and listed in My orders and in the operator queue; the operator can still accept it. |
 | AC-16 | An order with 0 lines, 21 lines or the same item twice is rejected with 422 and no order is stored. |
 | AC-17 | An order containing a sold-out or unknown item is rejected with 422 `ITEM_UNAVAILABLE` naming the item; no order, line or history row is stored, even if the other lines are valid. |
 | AC-18 | Order numbers follow `ORD-YYYYMMDD-NNNN` (Bangkok date) and the second order of the day has the next number. |
@@ -66,3 +67,4 @@ Uses Order, OrderLine, OrderStatusChange and MenuItem (F-16). No new migration.
 |---|---|---|
 | 1.0 | 2026-11-05 | Initial contract |
 | 1.1 | 2026-11-07 | Corrected the Issue number (the baseline PR took #1, so issues are #2–#9). No behavior change. |
+| 1.2 | 2026-11-25 | CR-01 (Lab 7): quantity limit 1–5 in the feature SDS, API error text, cart UI and AC-15; AC-15a added for orders stored before the change. |

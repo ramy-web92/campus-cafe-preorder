@@ -1,7 +1,7 @@
 // Pure order rules (no database) — BR-01, BR-03, BR-04, BR-15. Unit-tested in tests/unit/order-rules.test.ts.
 
 export const MIN_QTY = 1;
-export const MAX_QTY = 10;
+export const MAX_QTY = 5; // BR-03 v1.1 (CR-01, Lab 7): was 10 in Sprint 1
 export const MAX_LINES = 20;
 export const NOTE_MAX = 200;
 
