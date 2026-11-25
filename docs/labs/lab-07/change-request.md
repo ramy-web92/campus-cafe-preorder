@@ -1,7 +1,7 @@
 # CR-01 — Line quantity limit 1–10 → 1–5 (Lab 7)
 
-**Status:** Proposed — waiting for instructor/TA approval · **Requested by:** Rémy FAHS · **Reviewer:** Maxime DARWICHE · **Date:** 2026-11-25
-**Issue:** #47 · **Approval:** _approver, date and message reference are added here when received_
+**Status:** Cleared to proceed · **Requested by:** Rémy FAHS · **Reviewer:** Maxime DARWICHE · **Date:** 2026-11-25
+**Issue:** #47 · **Approval:** requested by e-mail to the TAs on 25/11/2026 11:12; TA Kantapat Suwannahong replied on 25/11/2026 11:47: "For Lab 7, you do not need to have the instructor or TAs check or approve your work. You can proceed directly." Implementation starts after this reply.
 
 ## 1. Versions
 

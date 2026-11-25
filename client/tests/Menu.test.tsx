@@ -32,15 +32,17 @@ describe("Menu and cart", () => {
     expect(screen.getByRole("button", { name: "Add Iced Latte" })).toBeEnabled();
   });
 
-  it("UI-02 keeps quantities between 1 and 10 (AC-15)", async () => {
+  // UI-02 revised by CR-01 (Lab 7): the stepper and the Add button stop at 5 (was 10)
+  it("UI-02 keeps quantities between 1 and 5 (AC-15 rev. CR-01)", async () => {
     const user = userEvent.setup();
     render(<Menu />);
     await user.click(await screen.findByRole("button", { name: "Add Iced Latte" }));
     expect(screen.getByRole("button", { name: "Decrease Iced Latte" })).toBeDisabled();
-    for (let i = 0; i < 9; i++) await user.click(screen.getByRole("button", { name: "Increase Iced Latte" }));
+    for (let i = 0; i < 4; i++) await user.click(screen.getByRole("button", { name: "Increase Iced Latte" }));
     const stepper = screen.getByRole("group", { name: "Quantity of Iced Latte" });
-    expect(within(stepper).getByText("10")).toBeInTheDocument();
+    expect(within(stepper).getByText("5")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Increase Iced Latte" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Add Iced Latte" })).toBeDisabled();
   });
 
   it("UI-03 offers no Place order button while the cart is empty and never calls the API (DEF-D01, AC-16)", async () => {
