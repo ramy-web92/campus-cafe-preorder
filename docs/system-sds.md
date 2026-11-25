@@ -1,6 +1,6 @@
 # KMUTT Café Pre-Order — System-Level Software Design Specification (SDS)
 
-> Version 1.0 (Sprint 1 baseline). Related: [srs.md](srs.md) · [features.md](features.md)
+> Version 1.1 (CR-01, Lab 7). Related: [srs.md](srs.md) · [features.md](features.md)
 
 ## 1. Architecture and stack
 
@@ -47,7 +47,7 @@ erDiagram
 | **Category** | id, name, sortOrder | `name` unique |
 | **MenuItem** | id, categoryId, name, description, priceSatang, isAvailable, createdAt, updatedAt | `priceSatang` integer > 0 (CHECK) and ≤ 100 000; FK → Category |
 | **Order** | id, orderNumber, customerId, status, totalSatang, note, version, createdAt, updatedAt, acceptedAt; later: paymentStatus, pickupAt, rejectReason | `orderNumber` unique; `status` enum `SUBMITTED, ACCEPTED, PREPARING, READY, PICKED_UP, REJECTED, CANCELLED`; FK → User (customer); index (status, createdAt) and (customerId, createdAt) |
-| **OrderLine** | id, orderId, menuItemId, itemName, unitPriceSatang, quantity, lineTotalSatang | `itemName` and `unitPriceSatang` are **snapshots** (BR-02); `quantity` CHECK 1–10; unique (orderId, menuItemId) enforces BR-04; FK → Order (cascade on delete only for test cleanup), FK → MenuItem (restrict) |
+| **OrderLine** | id, orderId, menuItemId, itemName, unitPriceSatang, quantity, lineTotalSatang | `itemName` and `unitPriceSatang` are **snapshots** (BR-02); `quantity` CHECK 1–10 kept on purpose (rows stored before CR-01 may hold 6–10); new orders are limited to 1–5 by `validateOrderInput` (BR-03 v1.1); unique (orderId, menuItemId) enforces BR-04; FK → Order (cascade on delete only for test cleanup), FK → MenuItem (restrict) |
 | **OrderStatusChange** | id, orderId, fromStatus, toStatus, actorId, reason, createdAt | Append-only (BR-11); index (orderId, createdAt) |
 | **session** | sid, sess (JSON), expire | Session store used by `connect-pg-simple`; created by a migration |
 
@@ -152,3 +152,4 @@ flowchart LR
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-05 | Baseline for Project Deliverable 1. |
+| 1.1 | 2026-11-25 | CR-01 (Lab 7): OrderLine note — the database CHECK stays 1–10 for historical rows, the 1–5 rule for new orders is enforced in the order validation layer. No migration. |

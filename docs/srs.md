@@ -1,7 +1,7 @@
 # KMUTT Café Pre-Order — Software Requirements Specification (SRS)
 
-> CPE 334 Group Project · Theme 4 — E-Commerce or Ordering System · Version 1.0 (Sprint 1 baseline)
-> Team: FAHS Rémy (69546000443) · DARWICHE Maxime (69540460044)
+> CPE 334 Group Project · Theme 4 — E-Commerce or Ordering System · Version 1.1 (CR-01, Lab 7)
+> Team: FAHS Rémy (69540460043) · DARWICHE Maxime (69540460044)
 > Change history is kept in Git; revisions are listed in §8.
 
 ## 1. Stakeholder problem and context
@@ -56,7 +56,7 @@ Each account has exactly one role. Operators handle **all orders of the café** 
 |---|---|---|
 | BR-01 | The order total and every line total are calculated **by the server** from the authoritative menu prices at submission time (`lineTotal = unitPrice × quantity`, `total = Σ lineTotal`). Prices or totals sent by the client are ignored. | 1 |
 | BR-02 | Each order line stores a **snapshot** of the item name and unit price at submission. Later menu changes never change an existing order. | 1 |
-| BR-03 | A line quantity must be an integer from **1 to 10**. Anything else is rejected and no order is stored. | 1 |
+| BR-03 | A line quantity must be an integer from **1 to 5**. Anything else is rejected and no order is stored. Orders stored before CR-01 keep their quantities (BR-02). *(Changed by CR-01, v1.1; Sprint 1 rule was 1 to 10.)* | 1 · CR-01 |
 | BR-04 | An order contains **1 to 20 lines**, and the same menu item may appear only once per order (duplicate lines are rejected). | 1 |
 | BR-05 | Only menu items that exist and are **available** can be ordered. If any line refers to an unavailable or unknown item, the whole order is rejected and nothing is stored. | 1 |
 | BR-06 | Order status transitions are limited to: Submitted → Accepted / Rejected / Cancelled; Accepted → Preparing / Cancelled; Preparing → Ready; Ready → Picked up. Picked up, Rejected and Cancelled are final. Any other transition is rejected. | 1 (accept) · 2 (rest) |
@@ -97,7 +97,7 @@ Each account has exactly one role. Operators handle **all orders of the café** 
 | D-02 | Decision | Operators handle all orders of the café (one shop, no branch or station scope). | Recorded; multi-branch is excluded. |
 | D-03 | Decision | Money is stored as integer **satang** (1 THB = 100 satang) to avoid rounding errors; the UI formats it as THB with 2 decimals. | Recorded. |
 | D-04 | Decision | Duplicate lines for the same item are rejected instead of merged, so the customer sees exactly what is stored. | Recorded (BR-04). |
-| D-05 | Decision | Quantity 1–10 per line and 1–20 lines per order: realistic for a café and easy to test at the boundaries. | Recorded (BR-03, BR-04). |
+| D-05 | Decision | Quantity 1–5 per line (1–10 until CR-01) and 1–20 lines per order: realistic for a café and easy to test at the boundaries. | Recorded (BR-03, BR-04); quantity revised by CR-01. |
 | D-06 | Decision | Accounts are seeded (no self-registration), as allowed for Sprint 1. | Recorded. |
 | D-07 | Decision | Time zone Asia/Bangkok for order numbers, opening hours and daily summaries. | Recorded. |
 | D-08 | Decision | Session-cookie authentication (server-side session store in PostgreSQL) instead of JWT, so logout really invalidates the session. | Recorded; see SDS §5. |
@@ -111,3 +111,4 @@ Each account has exactly one role. Operators handle **all orders of the café** 
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-05 | Baseline for Project Deliverable 1. |
+| 1.1 | 2026-11-25 | CR-01 (Lab 7): BR-03 line quantity limit changed from 1–10 to 1–5 for new orders; D-05 updated. Student ID in the header corrected. |

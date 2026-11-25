@@ -1,6 +1,6 @@
 # KMUTT Café Pre-Order — Requirements Traceability
 
-> Version 1.1 (status updated after the Sprint 1 release). Requirement → feature/responsibility → sprint → verification.
+> Version 1.2 (CR-01, Lab 7). Requirement → feature/responsibility → sprint → verification.
 > Sprint 1 rows link to the acceptance criteria and tests in [sprints/sprint-1/](sprints/sprint-1/). Later sprints are allocated now; their AC and tests are written when their contracts are prepared.
 
 | Requirement | Feature / responsibility | Sprint | Verification (AC / test) | Status |
@@ -26,7 +26,7 @@
 | FR-19 Operator dashboard | F-12 | 3 | Sprint 3 contract | Allocated |
 | BR-01 Server-side totals | F-04 | 1 | AC-12, AC-13 / TEST-U01, TEST-O02, TEST-O03 | Verified in S1 |
 | BR-02 Price snapshot | F-04 | 1 | AC-14 / TEST-O04 | Verified in S1 |
-| BR-03 Quantity 1–10 | F-04 | 1 | AC-15 / TEST-U02, TEST-O05 | Verified in S1 |
+| BR-03 Quantity 1–5 (CR-01; 1–10 in S1) | F-04 | 1 · CR-01 | AC-15, AC-15a / TEST-U02, TEST-O05, TEST-O14, UI-02 | Verified in S1; CR-01 pending |
 | BR-04 1–20 lines, no duplicates | F-04 | 1 | AC-16 / TEST-U03, TEST-O06 | Verified in S1 |
 | BR-05 Available items only | F-03, F-04 | 1 | AC-17 / TEST-O07, E2E-05 | Verified in S1 |
 | BR-06 Transition matrix | F-06 (accept), F-07, F-08 | 1 · 2 | AC-32 / TEST-U10, TEST-Q03 (Sprint 1 part) | Verified in S1 (S1 part) |
@@ -59,4 +59,4 @@
 - Every FR, BR and NFR of the baseline has a feature/responsibility and a sprint.
 - Sprint 1 verifies: FR-01…FR-09, BR-01…BR-05, BR-08, BR-09, BR-15, BR-17, the accept part of BR-06/BR-07/BR-11, NFR-01…NFR-07 and the local part of NFR-12.
 - Uncovered requirements: **none**.
-- Approved changes: none to the scope. Sprint 1 test additions (E2E-05, E2E-06) are recorded in the STS v1.1.
+- Approved changes: CR-01 (Lab 7) — BR-03 quantity limit 1–10 → 1–5, see [labs/lab-07/change-request.md](labs/lab-07/change-request.md). Sprint 1 test additions (E2E-05, E2E-06) are recorded in the STS v1.1.
