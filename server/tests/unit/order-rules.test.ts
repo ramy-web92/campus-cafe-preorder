@@ -17,17 +17,18 @@ describe("TEST-U01 — server-side pricing (AC-12, BR-01)", () => {
   });
 });
 
-describe("TEST-U02 — quantity 1 to 10 (AC-15, BR-03)", () => {
-  it.each([1, 10])("accepts quantity %s", (q) => {
+// TEST-U02 revised by CR-01 (Lab 7): limit 1–5; was 1–10 in Sprint 1 (old "accepts 10" replaced, see docs/labs/lab-07/change-request.md)
+describe("TEST-U02 — quantity 1 to 5 (AC-15 rev. CR-01, BR-03 v1.1)", () => {
+  it.each([1, 5])("accepts quantity %s", (q) => {
     const { value, errors } = validateOrderInput({ lines: [line(1, q)] });
     expect(errors).toEqual({});
     expect(value?.lines[0].quantity).toBe(q);
   });
 
-  it.each([0, 11, -1, 1.5, "2", null])("rejects quantity %s", (q) => {
+  it.each([0, 6, 10, 11, -1, 1.5, "2", null])("rejects quantity %s", (q) => {
     const { value, errors } = validateOrderInput({ lines: [line(1, q)] });
     expect(value).toBeUndefined();
-    expect(errors["lines[0].quantity"]).toBe("Quantity must be an integer from 1 to 10.");
+    expect(errors["lines[0].quantity"]).toBe("Quantity must be an integer from 1 to 5.");
   });
 });
 
