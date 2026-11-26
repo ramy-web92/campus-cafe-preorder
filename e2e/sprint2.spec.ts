@@ -68,3 +68,23 @@ test("E2E-S02 an Operator moves an order to Picked up and the Customer sees the 
   await expect(history).toContainText("Ready → Picked up by Olivia Operator");
   await page.screenshot({ path: `${SHOTS2}/s02-customer-history.png`, fullPage: true });
 });
+
+test("E2E-S03 an Operator adds a menu item and a Customer can order it (AC-70, AC-73)", async ({ page }) => {
+  await login(page, "olivia@cafe.test");
+  await page.getByRole("button", { name: "Menu" }).click();
+  await page.getByRole("button", { name: "Add item" }).click();
+  await page.getByLabel("Category").selectOption({ label: "Bakery" });
+  await page.getByLabel("Name").fill("Banana Bread");
+  await page.getByLabel("Price (THB)").fill("55");
+  await page.screenshot({ path: `${SHOTS2}/s03-add-item.png`, fullPage: true });
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(page.getByText("Saved Banana Bread.")).toBeVisible();
+  await logout(page);
+
+  await login(page, "alice@cafe.test");
+  await expect(page.getByText("Banana Bread")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add Banana Bread" })).toBeEnabled();
+  await page.screenshot({ path: `${SHOTS2}/s03-customer-menu.png`, fullPage: true });
+  const [row] = await sql(`SELECT "priceSatang", "isAvailable" FROM "MenuItem" WHERE name = 'Banana Bread'`);
+  expect(row).toEqual({ priceSatang: 5500, isAvailable: true });
+});
