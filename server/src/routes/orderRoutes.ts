@@ -17,7 +17,7 @@ orderRouter.post("/api/orders", requireRole("CUSTOMER"), async (req, res, next) 
 
 orderRouter.get("/api/orders", requireRole("CUSTOMER"), async (req, res, next) => {
   try {
-    res.status(200).json(await listCustomerOrders(req.session.userId!, parsePage(req.query.page)));
+    res.status(200).json(await listCustomerOrders(req.session.userId!, parsePage(req.query.page), req.query as Record<string, unknown>));
   } catch (err) {
     next(err);
   }

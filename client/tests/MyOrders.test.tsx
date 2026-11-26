@@ -1,5 +1,5 @@
 // F-05 UI (AC-20, AC-21, AC-22); UI-F01 — docs/sprints/sprint-3/sts.md (F-13). The API module is mocked.
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import MyOrders from "../src/MyOrders.js";
 import OrderDetailPage from "../src/OrderDetail.js";
@@ -23,7 +23,7 @@ describe("My orders", () => {
     await user.click(await screen.findByRole("button", { name: "ORD-20261106-0004" }));
     expect(onOpen).toHaveBeenCalledWith(12);
     expect(screen.getByText("175.00 THB")).toBeInTheDocument();
-    expect(screen.getByText("Accepted")).toBeInTheDocument();
+    expect(within(screen.getByRole("table")).getByText("Accepted")).toBeInTheDocument(); // the F-13 status filter also lists "Accepted"
   });
 
   it("shows an empty state with a link to the menu", async () => {

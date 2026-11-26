@@ -6,6 +6,7 @@ import { bangkokDayKey, formatOrderNumber, priceOrder, validateOrderInput } from
 import { changeStatus } from "./orderStatusService.js";
 import { PAYABLE_STATUSES } from "./orderTransitions.js";
 import { validatePickupTime } from "./pickupRules.js";
+import { parseOrderFilters } from "./orderFilters.js";
 
 const detailInclude = {
   lines: { orderBy: { id: "asc" } },
@@ -125,9 +126,11 @@ export function parsePage(raw: unknown): number {
   return Number.isInteger(n) && n >= 1 ? n : 1;
 }
 
-/** Orders of one customer only, newest first. */
-export async function listCustomerOrders(customerId: number, page: number) {
-  const where = { customerId };
+/** Orders of one customer only, newest first; F-13 filters only narrow the customer's own orders (BR-08). */
+export async function listCustomerOrders(customerId: number, page: number, query: Record<string, unknown> = {}) {
+  const parsed = parseOrderFilters(query);
+  if (!parsed.ok) throw new HttpError(422, "VALIDATION_ERROR", "Please correct the filters.", { fields: parsed.fields });
+  const where = { ...parsed.where, customerId };
   const [totalItems, orders] = await Promise.all([
     prisma.order.count({ where }),
     prisma.order.findMany({
@@ -151,6 +154,7 @@ export async function listCustomerOrders(customerId: number, page: number) {
       createdAt: o.createdAt,
     })),
     pagination: { page, pageSize: PAGE_SIZE, totalItems, totalPages: Math.ceil(totalItems / PAGE_SIZE) },
+    filters: parsed.filters,
   };
 }
 

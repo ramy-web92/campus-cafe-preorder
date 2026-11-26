@@ -136,8 +136,18 @@ export interface Page<T> {
   pagination: { page: number; pageSize: number; totalItems: number; totalPages: number };
 }
 
+// F-13 filters; empty values are not sent
+export interface OrderFilters {
+  status?: string;
+  from?: string;
+  to?: string;
+}
 export const myOrdersApi = {
-  list: (page = 1) => api<Page<OrderSummary>>(`/api/orders?page=${page}`),
+  list: (page = 1, filters: OrderFilters = {}) => {
+    const params = new URLSearchParams({ page: String(page) });
+    for (const [k, v] of Object.entries(filters)) if (v) params.set(k, v);
+    return api<Page<OrderSummary>>(`/api/orders?${params}`);
+  },
   get: (id: number) => api<{ order: OrderDetail }>(`/api/orders/${id}`).then((r) => r.order),
   // F-07
   cancel: (id: number) => api<{ order: OrderDetail }>(`/api/orders/${id}/cancel`, { method: "POST" }).then((r) => r.order),
