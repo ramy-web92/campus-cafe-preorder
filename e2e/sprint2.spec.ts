@@ -88,3 +88,21 @@ test("E2E-S03 an Operator adds a menu item and a Customer can order it (AC-70, A
   const [row] = await sql(`SELECT "priceSatang", "isAvailable" FROM "MenuItem" WHERE name = 'Banana Bread'`);
   expect(row).toEqual({ priceSatang: 5500, isAvailable: true });
 });
+
+test("E2E-S04 a Customer pays, then cancels, and the payment is refunded (AC-80, AC-83)", async ({ page }) => {
+  const orderNumber = await aliceOrders(page);
+  await aliceOpens(page, orderNumber);
+  await expect(page.getByText(/Payment: Unpaid/)).toBeVisible();
+  await page.getByRole("button", { name: "Pay now (simulated)" }).click();
+  await expect(page.getByText(/Payment: Paid/)).toBeVisible();
+  await page.screenshot({ path: `${SHOTS2}/s04-paid.png`, fullPage: true });
+
+  await page.getByRole("button", { name: "Cancel order" }).click();
+  await page.getByRole("button", { name: "Yes, cancel order" }).click();
+  await expect(page.getByText(/Payment: Refunded/)).toBeVisible();
+  await expect(page.getByText("Cancelled").first()).toBeVisible();
+  await page.screenshot({ path: `${SHOTS2}/s04-refunded.png`, fullPage: true });
+
+  const [row] = await sql(`SELECT status, "paymentStatus" FROM "Order" WHERE "orderNumber" = $1`, [orderNumber]);
+  expect(row).toEqual({ status: "CANCELLED", paymentStatus: "REFUNDED" });
+});

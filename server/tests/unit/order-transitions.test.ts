@@ -1,7 +1,7 @@
 // TEST-U10 — docs/sprints/sprint-1/sts.md (AC-32, BR-06 accept part)
 // TEST-T01..TEST-T04 — docs/sprints/sprint-2/sts.md (F-07, BR-06, BR-10)
 import { describe, it, expect } from "vitest";
-import { ORDER_STATUSES, canTransition, validateReason } from "../../src/services/orderTransitions.js";
+import { ORDER_STATUSES, canPay, canTransition, validateReason } from "../../src/services/orderTransitions.js";
 
 describe("TEST-U10 — an order can be accepted only from Submitted (AC-32)", () => {
   it.each(ORDER_STATUSES)("%s → ACCEPTED", (from) => {
@@ -70,4 +70,17 @@ describe("TEST-T05 — fulfilment moves forward one step at a time (AC-60, AC-61
   ] as const)("%s → %s is %s", (from, to, allowed) => {
     expect(canTransition(from, to)).toBe(allowed);
   });
+});
+
+// TEST-T06 — docs/sprints/sprint-2/sts.md (F-10, BR-13, AC-80..AC-82)
+describe("TEST-T06 — payment is allowed only for unpaid, open orders (BR-13)", () => {
+  const open = ["SUBMITTED", "ACCEPTED", "PREPARING", "READY"];
+  for (const status of ORDER_STATUSES) {
+    for (const payment of ["UNPAID", "PAID", "REFUNDED"] as const) {
+      const expected = payment === "UNPAID" && open.includes(status);
+      it(`${status} + ${payment} → ${expected}`, () => {
+        expect(canPay(status, payment)).toBe(expected);
+      });
+    }
+  }
 });
