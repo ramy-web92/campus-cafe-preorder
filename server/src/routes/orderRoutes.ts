@@ -1,8 +1,8 @@
-// F-04 and F-05 endpoints (docs/sprints/sprint-1/F-03-F-04-place-order.md, F-05-my-orders.md).
+// F-04, F-05 and F-07 (customer cancel) endpoints (docs/sprints/sprint-1/F-03-F-04-place-order.md, F-05-my-orders.md).
 import { Router } from "express";
 import { requireRole } from "../http/auth.js";
 import { HttpError } from "../http/errors.js";
-import { createOrder, getCustomerOrder, listCustomerOrders, parsePage } from "../services/orderService.js";
+import { cancelOrderByCustomer, createOrder, getCustomerOrder, listCustomerOrders, parsePage } from "../services/orderService.js";
 
 export const orderRouter = Router();
 
@@ -23,11 +23,24 @@ orderRouter.get("/api/orders", requireRole("CUSTOMER"), async (req, res, next) =
   }
 });
 
+function parseId(raw: string): number {
+  const id = Number(raw);
+  if (!Number.isInteger(id) || id < 1) throw new HttpError(404, "NOT_FOUND", "Order not found.");
+  return id;
+}
+
 orderRouter.get("/api/orders/:id", requireRole("CUSTOMER"), async (req, res, next) => {
   try {
-    const id = Number(req.params.id);
-    if (!Number.isInteger(id) || id < 1) throw new HttpError(404, "NOT_FOUND", "Order not found.");
-    res.status(200).json({ order: await getCustomerOrder(req.session.userId!, id) });
+    res.status(200).json({ order: await getCustomerOrder(req.session.userId!, parseId(req.params.id)) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// F-07 (docs/sprints/sprint-2/F-07-reject-cancel.md)
+orderRouter.post("/api/orders/:id/cancel", requireRole("CUSTOMER"), async (req, res, next) => {
+  try {
+    res.status(200).json({ order: await cancelOrderByCustomer(req.session.userId!, parseId(req.params.id)) });
   } catch (err) {
     next(err);
   }

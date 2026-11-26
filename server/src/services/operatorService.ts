@@ -1,7 +1,8 @@
-// F-06 Operator queue and accept (FR-08, FR-09, BR-06, BR-09, BR-11).
+// F-06 Operator queue and accept (FR-08, FR-09, BR-06, BR-09, BR-11); F-07 reject and café cancel (FR-10, BR-10).
 import { prisma } from "../prisma.js";
 import { HttpError } from "../http/errors.js";
-import { ORDER_STATUSES, OrderStatus, canTransition } from "./orderTransitions.js";
+import { ORDER_STATUSES, OrderStatus, validateReason } from "./orderTransitions.js";
+import { changeStatus, reasonOrThrow } from "./orderStatusService.js";
 import { PAGE_SIZE, detailInclude, serializeOrder } from "./orderService.js";
 
 export function parseStatusFilter(raw: unknown): OrderStatus {
@@ -46,29 +47,41 @@ export async function getOrderForOperator(orderId: number) {
   return { ...serializeOrder(order), customer: order.customer };
 }
 
-/**
- * Accept once (BR-09): the UPDATE only matches while the status is still SUBMITTED, so when two
- * operators accept at the same time the database applies one update and the other matches 0 rows → 409.
- */
+/** Accept once (BR-09): see changeStatus for the conditional update. */
 export async function acceptOrder(orderId: number, operatorId: number) {
-  await prisma.$transaction(async (tx) => {
-    const current = await tx.order.findUnique({ where: { id: orderId }, select: { status: true } });
-    if (!current) throw new HttpError(404, "NOT_FOUND", "Order not found.");
-    if (!canTransition(current.status, "ACCEPTED")) {
-      throw new HttpError(409, "INVALID_TRANSITION", `Only submitted orders can be accepted. This order is ${current.status}.`);
-    }
+  await changeStatus({
+    orderId,
+    to: "ACCEPTED",
+    actorId: operatorId,
+    data: { acceptedAt: new Date() },
+    notAllowed: (current) => `Only submitted orders can be accepted. This order is ${current}.`,
+  });
+  return getOrderForOperator(orderId);
+}
 
-    const { count } = await tx.order.updateMany({
-      where: { id: orderId, status: "SUBMITTED" },
-      data: { status: "ACCEPTED", acceptedAt: new Date(), version: { increment: 1 } },
-    });
-    if (count !== 1) {
-      throw new HttpError(409, "INVALID_TRANSITION", "This order was just handled by someone else.");
-    }
+/** F-07: reject a Submitted order with a reason (FR-10, BR-10). */
+export async function rejectOrder(orderId: number, operatorId: number, rawReason: unknown) {
+  const reason = reasonOrThrow(validateReason(rawReason));
+  await changeStatus({
+    orderId,
+    to: "REJECTED",
+    actorId: operatorId,
+    reason,
+    notAllowed: (current) => `Only submitted orders can be rejected. This order is ${current}.`,
+  });
+  return getOrderForOperator(orderId);
+}
 
-    await tx.orderStatusChange.create({
-      data: { orderId, fromStatus: "SUBMITTED", toStatus: "ACCEPTED", actorId: operatorId }, // BR-11
-    });
+/** F-07: the café cancels an Accepted order with a reason (BR-06). A Submitted order is rejected instead. */
+export async function cancelOrderByOperator(orderId: number, operatorId: number, rawReason: unknown) {
+  const reason = reasonOrThrow(validateReason(rawReason));
+  await changeStatus({
+    orderId,
+    to: "CANCELLED",
+    actorId: operatorId,
+    reason,
+    allowedFrom: ["ACCEPTED"],
+    notAllowed: (current) => `Only accepted orders can be cancelled by the café. This order is ${current}.`,
   });
   return getOrderForOperator(orderId);
 }

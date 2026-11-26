@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../prisma.js";
 import { HttpError } from "../http/errors.js";
 import { bangkokDayKey, formatOrderNumber, priceOrder, validateOrderInput } from "./orderRules.js";
+import { changeStatus } from "./orderStatusService.js";
 
 const detailInclude = {
   lines: { orderBy: { id: "asc" } },
@@ -144,4 +145,17 @@ export async function getCustomerOrder(customerId: number, orderId: number) {
   const order = await prisma.order.findFirst({ where: { id: orderId, customerId }, include: detailInclude });
   if (!order) throw new HttpError(404, "NOT_FOUND", "Order not found.");
   return serializeOrder(order);
+}
+
+/** F-07: a customer cancels their own order while it is still Submitted (FR-12). */
+export async function cancelOrderByCustomer(customerId: number, orderId: number) {
+  await changeStatus({
+    orderId,
+    to: "CANCELLED",
+    actorId: customerId,
+    customerId,
+    allowedFrom: ["SUBMITTED"],
+    notAllowed: (current) => `This order can no longer be cancelled. It is ${current}.`,
+  });
+  return getCustomerOrder(customerId, orderId);
 }
