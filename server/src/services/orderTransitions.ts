@@ -30,3 +30,11 @@ export function validateReason(raw: unknown): { value: string } | { error: strin
 
 /** F-08: targets of the lifecycle endpoint (accept, reject and cancel have their own endpoints). */
 export const LIFECYCLE_TARGETS: OrderStatus[] = ["PREPARING", "READY", "PICKED_UP"];
+
+// F-10 (BR-13): an order can be paid once, while it is still open.
+export type PaymentStatus = "UNPAID" | "PAID" | "REFUNDED";
+export const PAYABLE_STATUSES: OrderStatus[] = ["SUBMITTED", "ACCEPTED", "PREPARING", "READY"];
+
+export function canPay(status: OrderStatus, paymentStatus: PaymentStatus): boolean {
+  return paymentStatus === "UNPAID" && PAYABLE_STATUSES.includes(status);
+}

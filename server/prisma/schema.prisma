@@ -24,6 +24,13 @@ enum OrderStatus {
   CANCELLED
 }
 
+// F-10 simulated payment (BR-13): independent of the order status
+enum PaymentStatus {
+  UNPAID
+  PAID
+  REFUNDED
+}
+
 model User {
   id            Int                 @id @default(autoincrement())
   email         String              @unique
@@ -70,6 +77,8 @@ model Order {
   // Incremented on every status change (optimistic concurrency)
   version       Int                 @default(1)
   acceptedAt    DateTime?
+  paymentStatus PaymentStatus       @default(UNPAID)
+  paidAt        DateTime?
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   lines         OrderLine[]

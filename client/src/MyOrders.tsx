@@ -1,7 +1,7 @@
 // F-05 — the customer's own orders, newest first.
 import { useEffect, useState } from "react";
 import { ApiError, OrderSummary, Page, formatTHB, myOrdersApi } from "./api.js";
-import StatusBadge from "./StatusBadge.js";
+import StatusBadge, { PaymentBadge } from "./StatusBadge.js";
 
 export default function MyOrders({ onOpen, onBrowseMenu }: { onOpen: (id: number) => void; onBrowseMenu: () => void }) {
   const [page, setPage] = useState(1);
@@ -61,7 +61,7 @@ export default function MyOrders({ onOpen, onBrowseMenu }: { onOpen: (id: number
                     <td className="text-nowrap">{new Date(o.createdAt).toLocaleString()}</td>
                     <td>{o.itemCount}</td>
                     <td className="text-nowrap">{formatTHB(o.totalSatang)}</td>
-                    <td><StatusBadge status={o.status} /></td>
+                    <td><div className="d-flex flex-wrap gap-1"><StatusBadge status={o.status} /> <PaymentBadge status={o.paymentStatus} /></div></td>
                   </tr>
                 ))}
               </tbody>

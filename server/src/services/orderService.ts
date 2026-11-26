@@ -4,6 +4,7 @@ import { prisma } from "../prisma.js";
 import { HttpError } from "../http/errors.js";
 import { bangkokDayKey, formatOrderNumber, priceOrder, validateOrderInput } from "./orderRules.js";
 import { changeStatus } from "./orderStatusService.js";
+import { PAYABLE_STATUSES } from "./orderTransitions.js";
 
 const detailInclude = {
   lines: { orderBy: { id: "asc" } },
@@ -22,6 +23,8 @@ export function serializeOrder(o: OrderWithDetail) {
     note: o.note,
     createdAt: o.createdAt,
     acceptedAt: o.acceptedAt,
+    paymentStatus: o.paymentStatus,
+    paidAt: o.paidAt,
     lines: o.lines.map((l) => ({
       menuItemId: l.menuItemId,
       itemName: l.itemName,
@@ -129,6 +132,7 @@ export async function listCustomerOrders(customerId: number, page: number) {
       id: o.id,
       orderNumber: o.orderNumber,
       status: o.status,
+      paymentStatus: o.paymentStatus,
       totalSatang: o.totalSatang,
       itemCount: o.lines.reduce((s, l) => s + l.quantity, 0),
       createdAt: o.createdAt,
@@ -157,5 +161,26 @@ export async function cancelOrderByCustomer(customerId: number, orderId: number)
     allowedFrom: ["SUBMITTED"],
     notAllowed: (current) => `This order can no longer be cancelled. It is ${current}.`,
   });
+  return getCustomerOrder(customerId, orderId);
+}
+
+/**
+ * F-10: simulated payment by the owner (FR-14, BR-13). The conditional update only matches an unpaid order that is
+ * still open, so a payment racing with a cancel either lands first (and is refunded by the cancel) or gets 409.
+ */
+export async function payOrder(customerId: number, orderId: number) {
+  const { count } = await prisma.order.updateMany({
+    where: { id: orderId, customerId, paymentStatus: "UNPAID", status: { in: PAYABLE_STATUSES } },
+    data: { paymentStatus: "PAID", paidAt: new Date() },
+  });
+  if (count !== 1) {
+    const order = await prisma.order.findFirst({ where: { id: orderId, customerId }, select: { status: true, paymentStatus: true } });
+    if (!order) throw new HttpError(404, "NOT_FOUND", "Order not found.");
+    const message =
+      order.paymentStatus === "PAID" ? "This order is already paid."
+      : order.paymentStatus === "REFUNDED" ? "This order was refunded."
+      : `A ${order.status} order cannot be paid.`;
+    throw new HttpError(409, "PAYMENT_NOT_ALLOWED", message);
+  }
   return getCustomerOrder(customerId, orderId);
 }

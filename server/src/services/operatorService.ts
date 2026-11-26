@@ -30,6 +30,7 @@ export async function listQueue(status: OrderStatus, page: number) {
       orderNumber: o.orderNumber,
       customerName: o.customer.name,
       status: o.status,
+      paymentStatus: o.paymentStatus,
       totalSatang: o.totalSatang,
       itemCount: o.lines.reduce((s, l) => s + l.quantity, 0),
       createdAt: o.createdAt,
