@@ -76,11 +76,11 @@ export default function App() {
             </nav>
             {view === "menu" && <Menu onOrderPlaced={(o) => openOrder(o.id)} />}
             {view === "orders" && <MyOrders onOpen={openOrder} onBrowseMenu={() => setView("menu")} />}
-            {view === "detail" && orderId && <OrderDetailPage load={loadCustomerOrder} onBack={() => setView("orders")} backLabel="← My orders" />}
+            {view === "detail" && orderId && <OrderDetailPage role="CUSTOMER" load={loadCustomerOrder} onBack={() => setView("orders")} backLabel="← My orders" />}
           </>
         ) : (
           view === "detail" && orderId ? (
-            <OrderDetailPage load={loadOperatorOrder} onBack={() => setView("menu")} backLabel="← Order queue" />
+            <OrderDetailPage role="OPERATOR" load={loadOperatorOrder} onBack={() => setView("menu")} backLabel="← Order queue" />
           ) : (
             <OperatorQueue onOpen={openOrder} />
           )
