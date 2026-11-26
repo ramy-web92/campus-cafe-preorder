@@ -1,4 +1,4 @@
-// F-06/F-07 — incoming orders, oldest first, with Accept / Reject / Cancel. The server decides whether the change is still allowed.
+// F-06/F-07/F-08, F-12 dashboard — incoming orders, oldest first, with Accept / Reject / Cancel. The server decides whether the change is still allowed.
 import { useEffect, useState } from "react";
 import { ApiError, Page, QueueOrder, formatPickup, formatTHB, operatorApi } from "./api.js";
 import StatusBadge, { PaymentBadge, statusLabel } from "./StatusBadge.js";
@@ -18,8 +18,12 @@ export default function OperatorQueue({ onOpen }: { onOpen: (id: number) => void
   const [error, setError] = useState("");
   const [message, setMessage] = useState<{ kind: "success" | "warning"; text: string } | null>(null);
 
+  // F-12 dashboard: today's counts per status (FR-19)
+  const [counts, setCounts] = useState<Record<string, number> | null>(null);
+
   async function load(s = status) {
     setError("");
+    operatorApi.dashboard().then((d) => setCounts(d.counts)).catch(() => setCounts(null));
     try {
       setData(await operatorApi.list(s));
     } catch (e) {
@@ -57,6 +61,25 @@ export default function OperatorQueue({ onOpen }: { onOpen: (id: number) => void
           <button className="btn btn-outline-secondary btn-sm" onClick={() => load()}>Refresh</button>
         </div>
       </div>
+
+      {counts && (
+        <div className="d-flex flex-wrap gap-2 mb-3" aria-label="Orders today">
+          <span className="small text-muted align-self-center me-1" aria-hidden="true">Today</span>
+          {FILTERS.map((f) => (
+            <button
+              key={f}
+              type="button"
+              className={`btn btn-sm ${f === status ? "btn-primary" : "btn-outline-secondary"} text-start`}
+              onClick={() => setStatus(f)}
+              aria-label={`Show ${statusLabel(f)} orders (${counts[f] ?? 0} today)`}
+              aria-pressed={f === status}
+            >
+              <span className="d-block fw-semibold">{counts[f] ?? 0}</span>
+              <span className="small">{statusLabel(f)}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div role="status" aria-live="polite">
         {message?.kind === "success" && <div className="alert alert-success py-2">{message.text}</div>}

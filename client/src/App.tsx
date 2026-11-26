@@ -7,6 +7,7 @@ import MyOrders from "./MyOrders.js";
 import OrderDetailPage from "./OrderDetail.js";
 import OperatorQueue from "./OperatorQueue.js";
 import MenuManagement from "./MenuManagement.js";
+import SalesSummary from "./SalesSummary.js";
 
 const ROLE_LABELS = { CUSTOMER: "Customer", OPERATOR: "Operator" } as const;
 
@@ -16,7 +17,7 @@ export default function App() {
   // Customer screens (F-03..F-05)
   const [view, setView] = useState<"menu" | "orders" | "detail">("menu");
   // Operator screens (F-06..F-09)
-  const [opView, setOpView] = useState<"queue" | "menu">("queue");
+  const [opView, setOpView] = useState<"queue" | "menu" | "sales">("queue");
   const [orderId, setOrderId] = useState<number | null>(null);
   const loadCustomerOrder = useCallback(() => myOrdersApi.get(orderId!), [orderId]);
   const loadOperatorOrder = useCallback(() => operatorApi.get(orderId!), [orderId]);
@@ -92,10 +93,15 @@ export default function App() {
                 <li className="nav-item">
                   <button className={`nav-link ${opView === "menu" ? "active" : ""}`} aria-current={opView === "menu" ? "page" : undefined} onClick={() => setOpView("menu")}>Menu</button>
                 </li>
+                <li className="nav-item">
+                  <button className={`nav-link ${opView === "sales" ? "active" : ""}`} aria-current={opView === "sales" ? "page" : undefined} onClick={() => setOpView("sales")}>Sales</button>
+                </li>
               </ul>
             </nav>
             {opView === "menu" ? (
               <MenuManagement />
+            ) : opView === "sales" ? (
+              <SalesSummary />
             ) : view === "detail" && orderId ? (
               <OrderDetailPage role="OPERATOR" load={loadOperatorOrder} onBack={() => setView("menu")} backLabel="← Order queue" />
             ) : (
