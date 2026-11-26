@@ -5,6 +5,7 @@ import { HttpError } from "../http/errors.js";
 import { bangkokDayKey, formatOrderNumber, priceOrder, validateOrderInput } from "./orderRules.js";
 import { changeStatus } from "./orderStatusService.js";
 import { PAYABLE_STATUSES } from "./orderTransitions.js";
+import { validatePickupTime } from "./pickupRules.js";
 
 const detailInclude = {
   lines: { orderBy: { id: "asc" } },
@@ -25,6 +26,8 @@ export function serializeOrder(o: OrderWithDetail) {
     acceptedAt: o.acceptedAt,
     paymentStatus: o.paymentStatus,
     paidAt: o.paidAt,
+    pickupAt: o.pickupAt,
+    pickupAsap: o.pickupAsap,
     lines: o.lines.map((l) => ({
       menuItemId: l.menuItemId,
       itemName: l.itemName,
@@ -46,7 +49,13 @@ export { detailInclude };
 
 export async function createOrder(customerId: number, body: unknown) {
   const { value, errors } = validateOrderInput(body);
-  if (!value) throw new HttpError(422, "VALIDATION_ERROR", "Please correct the order.", { fields: errors });
+  // F-11: the pickup time is checked against the server clock at submission (BR-14)
+  const now = new Date();
+  const pickup = validatePickupTime((body as { pickupAt?: unknown } | null)?.pickupAt, now);
+  if (!value || !pickup.ok) {
+    const fields = { ...(errors ?? {}), ...(!pickup.ok && { pickupAt: pickup.error }) };
+    throw new HttpError(422, "VALIDATION_ERROR", "Please correct the order.", { fields });
+  }
 
   // Two orders submitted at the same moment may pick the same number; the unique index rejects the second,
   // and we retry with the next number.
@@ -70,7 +79,6 @@ export async function createOrder(customerId: number, body: unknown) {
 
         const priced = priceOrder(value.lines, byId); // BR-01, BR-02
 
-        const now = new Date();
         const prefix = `ORD-${bangkokDayKey(now)}-`;
         const last = await tx.order.findFirst({
           where: { orderNumber: { startsWith: prefix } },
@@ -86,6 +94,9 @@ export async function createOrder(customerId: number, body: unknown) {
             status: "SUBMITTED",
             totalSatang: priced.totalSatang,
             note: value.note,
+            createdAt: now,
+            pickupAt: pickup.at, // = createdAt for ASAP orders (D-09)
+            pickupAsap: pickup.asap,
             lines: { create: priced.lines },
             statusChanges: { create: [{ fromStatus: null, toStatus: "SUBMITTED", actorId: customerId }] }, // BR-11
           },
@@ -133,6 +144,8 @@ export async function listCustomerOrders(customerId: number, page: number) {
       orderNumber: o.orderNumber,
       status: o.status,
       paymentStatus: o.paymentStatus,
+      pickupAt: o.pickupAt,
+      pickupAsap: o.pickupAsap,
       totalSatang: o.totalSatang,
       itemCount: o.lines.reduce((s, l) => s + l.quantity, 0),
       createdAt: o.createdAt,

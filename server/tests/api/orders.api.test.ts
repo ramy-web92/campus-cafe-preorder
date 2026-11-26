@@ -186,6 +186,7 @@ describe("Orders stored before CR-01 (AC-15a)", () => {
       data: {
         orderNumber: "ORD-20260101-9910", customerId: aliceId, status: "SUBMITTED", totalSatang: 45000,
         createdAt: new Date("2026-01-01T03:00:00Z"), // oldest, so it is on the first queue page
+        pickupAt: new Date("2026-01-01T03:00:00Z"), // as the F-11 migration sets for orders stored before it (ASAP)
         lines: { create: [{ menuItemId: id["Croissant"], itemName: "Croissant", unitPriceSatang: 4500, quantity: 10, lineTotalSatang: 45000 }] },
         statusChanges: { create: [{ fromStatus: null, toStatus: "SUBMITTED", actorId: aliceId }] },
       },
