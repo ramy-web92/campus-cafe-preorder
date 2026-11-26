@@ -1,7 +1,15 @@
-// Order actions by role (F-06 accept, F-07 reject/cancel). The server checks every transition again (BR-06);
+// Order actions by role (F-06 accept, F-07 reject/cancel, F-08 lifecycle). The server checks every transition again (BR-06);
 // these buttons only show what is allowed for the status the user is looking at.
 import { FormEvent, useState } from "react";
 import { ApiError, myOrdersApi, operatorApi } from "./api.js";
+import { statusLabel } from "./StatusBadge.js";
+
+// F-08: the one forward step allowed from each status (BR-06).
+const NEXT_STEP: Record<string, { to: "PREPARING" | "READY" | "PICKED_UP"; label: string }> = {
+  ACCEPTED: { to: "PREPARING", label: "Start preparing" },
+  PREPARING: { to: "READY", label: "Mark ready" },
+  READY: { to: "PICKED_UP", label: "Picked up" },
+};
 
 type Mode = null | "reject" | "cancel";
 interface Target {
@@ -10,7 +18,7 @@ interface Target {
   status: string;
 }
 
-/** Operator: Accept / Reject on Submitted orders, Cancel order on Accepted orders (reason required). */
+/** Operator: Accept / Reject on Submitted orders, next lifecycle step, Cancel order on Accepted orders (reason required). */
 export function OperatorActions({
   order,
   onDone,
@@ -92,6 +100,19 @@ export function OperatorActions({
             Reject
           </button>
         </>
+      )}
+      {NEXT_STEP[order.status] && (
+        <button
+          className="btn btn-primary btn-sm"
+          disabled={busy}
+          onClick={() => {
+            const step = NEXT_STEP[order.status];
+            run(() => operatorApi.setStatus(order.id, step.to), `Order ${order.orderNumber} is now ${statusLabel(step.to)}.`);
+          }}
+          aria-label={`${NEXT_STEP[order.status].label} ${order.orderNumber}`}
+        >
+          {NEXT_STEP[order.status].label}
+        </button>
       )}
       {order.status === "ACCEPTED" && (
         <button className="btn btn-outline-danger btn-sm" disabled={busy} onClick={() => setMode("cancel")} aria-label={`Cancel ${order.orderNumber}`}>

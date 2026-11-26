@@ -1,7 +1,7 @@
 // F-06 Operator queue and accept (FR-08, FR-09, BR-06, BR-09, BR-11); F-07 reject and café cancel (FR-10, BR-10).
 import { prisma } from "../prisma.js";
 import { HttpError } from "../http/errors.js";
-import { ORDER_STATUSES, OrderStatus, validateReason } from "./orderTransitions.js";
+import { LIFECYCLE_TARGETS, ORDER_STATUSES, OrderStatus, validateReason } from "./orderTransitions.js";
 import { changeStatus, reasonOrThrow } from "./orderStatusService.js";
 import { PAGE_SIZE, detailInclude, serializeOrder } from "./orderService.js";
 
@@ -82,6 +82,23 @@ export async function cancelOrderByOperator(orderId: number, operatorId: number,
     reason,
     allowedFrom: ["ACCEPTED"],
     notAllowed: (current) => `Only accepted orders can be cancelled by the café. This order is ${current}.`,
+  });
+  return getOrderForOperator(orderId);
+}
+
+/** F-08: Accepted → Preparing → Ready → Picked up, one step at a time (FR-11, BR-06). */
+export async function advanceOrder(orderId: number, operatorId: number, rawStatus: unknown) {
+  if (typeof rawStatus !== "string" || !(LIFECYCLE_TARGETS as string[]).includes(rawStatus)) {
+    throw new HttpError(422, "VALIDATION_ERROR", "Unknown target status.", {
+      fields: { status: `Use one of ${LIFECYCLE_TARGETS.join(", ")}.` },
+    });
+  }
+  const to = rawStatus as OrderStatus;
+  await changeStatus({
+    orderId,
+    to,
+    actorId: operatorId,
+    notAllowed: (current) => `An order that is ${current} cannot move to ${to}.`,
   });
   return getOrderForOperator(orderId);
 }
