@@ -11,14 +11,14 @@ export function parseStatusFilter(raw: unknown): OrderStatus {
   throw new HttpError(422, "VALIDATION_ERROR", "Unknown status filter.", { fields: { status: `Use one of ${ORDER_STATUSES.join(", ")}.` } });
 }
 
-/** Café-wide queue, oldest first (first come, first served). */
+/** Café-wide queue, earliest pickup first; ASAP orders by submission time (FR-15, AC-30 v1.2). */
 export async function listQueue(status: OrderStatus, page: number) {
   const where = { status };
   const [totalItems, orders] = await Promise.all([
     prisma.order.count({ where }),
     prisma.order.findMany({
       where,
-      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+      orderBy: [{ pickupAt: "asc" }, { id: "asc" }],
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       include: { customer: { select: { name: true } }, lines: { select: { quantity: true } } },
@@ -31,6 +31,8 @@ export async function listQueue(status: OrderStatus, page: number) {
       customerName: o.customer.name,
       status: o.status,
       paymentStatus: o.paymentStatus,
+      pickupAt: o.pickupAt,
+      pickupAsap: o.pickupAsap,
       totalSatang: o.totalSatang,
       itemCount: o.lines.reduce((s, l) => s + l.quantity, 0),
       createdAt: o.createdAt,

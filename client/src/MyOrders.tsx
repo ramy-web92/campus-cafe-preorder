@@ -1,6 +1,6 @@
 // F-05 — the customer's own orders, newest first.
 import { useEffect, useState } from "react";
-import { ApiError, OrderSummary, Page, formatTHB, myOrdersApi } from "./api.js";
+import { ApiError, OrderSummary, Page, formatTHB, myOrdersApi, formatPickup } from "./api.js";
 import StatusBadge, { PaymentBadge } from "./StatusBadge.js";
 
 export default function MyOrders({ onOpen, onBrowseMenu }: { onOpen: (id: number) => void; onBrowseMenu: () => void }) {
@@ -47,6 +47,7 @@ export default function MyOrders({ onOpen, onBrowseMenu }: { onOpen: (id: number
                 <tr>
                   <th scope="col">Order</th>
                   <th scope="col">Date</th>
+                  <th scope="col">Pickup</th>
                   <th scope="col">Items</th>
                   <th scope="col">Total</th>
                   <th scope="col">Status</th>
@@ -59,6 +60,7 @@ export default function MyOrders({ onOpen, onBrowseMenu }: { onOpen: (id: number
                       <button className="btn btn-link p-0" onClick={() => onOpen(o.id)}>{o.orderNumber}</button>
                     </td>
                     <td className="text-nowrap">{new Date(o.createdAt).toLocaleString()}</td>
+                    <td className="text-nowrap">{o.pickupAsap === false ? formatPickup(o) : "ASAP"}</td>
                     <td>{o.itemCount}</td>
                     <td className="text-nowrap">{formatTHB(o.totalSatang)}</td>
                     <td><div className="d-flex flex-wrap gap-1"><StatusBadge status={o.status} /> <PaymentBadge status={o.paymentStatus} /></div></td>

@@ -1,4 +1,4 @@
-// Menu & cart (F-03, F-04). The total shown here is an estimate; the server computes the real one (BR-01).
+// Menu & cart (F-03, F-04) with the pickup choice (F-11). The total shown here is an estimate; the server computes the real one (BR-01).
 import { useEffect, useState } from "react";
 import { ApiError, MenuCategory, MenuItem, OrderDetail, formatTHB, menuApi, ordersApi } from "./api.js";
 
@@ -10,6 +10,10 @@ export default function Menu({ onOrderPlaced }: { onOrderPlaced?: (order: OrderD
   const [loadError, setLoadError] = useState("");
   const [cart, setCart] = useState<Map<number, number>>(new Map());
   const [note, setNote] = useState("");
+  // F-11: "As soon as possible" by default (D-09); a chosen time is checked by the server (BR-14)
+  const [pickupMode, setPickupMode] = useState<"asap" | "time">("asap");
+  const [pickupLocal, setPickupLocal] = useState("");
+  const [pickupError, setPickupError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [lineErrors, setLineErrors] = useState<Record<number, string>>({});
   const [banner, setBanner] = useState("");
@@ -47,11 +51,22 @@ export default function Menu({ onOrderPlaced }: { onOrderPlaced?: (order: OrderD
     setSubmitting(true);
     setBanner("");
     setLineErrors({});
+    setPickupError("");
+    const lines = cartLines.map((l) => ({ menuItemId: l.item.id, quantity: l.qty }));
+    if (pickupMode === "time" && (!pickupLocal || Number.isNaN(new Date(pickupLocal).getTime()))) {
+      setPickupError("Choose a pickup date and time.");
+      setSubmitting(false);
+      return;
+    }
     try {
-      const order = await ordersApi.create(cartLines.map((l) => ({ menuItemId: l.item.id, quantity: l.qty })), note);
+      // datetime-local is in the browser's time zone; the server receives an ISO instant
+      const order =
+        pickupMode === "time" ? await ordersApi.create(lines, note, new Date(pickupLocal).toISOString()) : await ordersApi.create(lines, note);
       setPlaced(order);
       setCart(new Map());
       setNote("");
+      setPickupMode("asap");
+      setPickupLocal("");
       onOrderPlaced?.(order);
     } catch (e) {
       const err = e as ApiError;
@@ -61,6 +76,8 @@ export default function Menu({ onOrderPlaced }: { onOrderPlaced?: (order: OrderD
         setLineErrors(errors);
         setBanner("Some items are no longer available. Remove them and try again.");
         load(); // refresh availability, keep the cart
+      } else if (err.code === "VALIDATION_ERROR" && err.details?.fields?.pickupAt) {
+        setPickupError(err.details.fields.pickupAt);
       } else if (err.code === "VALIDATION_ERROR") {
         setBanner("Please check your order: " + Object.values(err.details?.fields ?? {}).join(" "));
       } else {
@@ -153,6 +170,33 @@ export default function Menu({ onOrderPlaced }: { onOrderPlaced?: (order: OrderD
                 </ul>
                 <label htmlFor="order-note" className="form-label small">Note (optional)</label>
                 <input id="order-note" className="form-control form-control-sm mb-2" maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} />
+                <fieldset className="mb-2">
+                  <legend className="form-label small mb-1">Pickup</legend>
+                  <div className="form-check">
+                    <input className="form-check-input" type="radio" name="pickup" id="pickup-asap" checked={pickupMode === "asap"} onChange={() => { setPickupMode("asap"); setPickupError(""); }} />
+                    <label className="form-check-label small" htmlFor="pickup-asap">As soon as possible</label>
+                  </div>
+                  <div className="form-check">
+                    <input className="form-check-input" type="radio" name="pickup" id="pickup-time" checked={pickupMode === "time"} onChange={() => setPickupMode("time")} />
+                    <label className="form-check-label small" htmlFor="pickup-time">Choose a time</label>
+                  </div>
+                  {pickupMode === "time" && (
+                    <div className="mt-1">
+                      <label htmlFor="pickup-at" className="form-label small mb-0">Pickup date and time</label>
+                      <input
+                        id="pickup-at"
+                        type="datetime-local"
+                        className={`form-control form-control-sm ${pickupError ? "is-invalid" : ""}`}
+                        value={pickupLocal}
+                        onChange={(e) => { setPickupLocal(e.target.value); setPickupError(""); }}
+                        aria-describedby="pickup-help"
+                      />
+                      <div id="pickup-help" className={pickupError ? "invalid-feedback d-block" : "form-text"}>
+                        {pickupError || "08:00–18:00, at least 15 minutes from now."}
+                      </div>
+                    </div>
+                  )}
+                </fieldset>
                 <div className="d-flex justify-content-between fw-semibold mb-2">
                   <span>Total</span>
                   <span>{formatTHB(estimate)}</span>

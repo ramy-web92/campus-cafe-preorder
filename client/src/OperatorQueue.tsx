@@ -1,6 +1,6 @@
 // F-06/F-07 — incoming orders, oldest first, with Accept / Reject / Cancel. The server decides whether the change is still allowed.
 import { useEffect, useState } from "react";
-import { ApiError, Page, QueueOrder, formatTHB, operatorApi } from "./api.js";
+import { ApiError, Page, QueueOrder, formatPickup, formatTHB, operatorApi } from "./api.js";
 import StatusBadge, { PaymentBadge, statusLabel } from "./StatusBadge.js";
 import { OperatorActions } from "./OrderActions.js";
 
@@ -75,13 +75,14 @@ export default function OperatorQueue({ onOpen }: { onOpen: (id: number) => void
       ) : (
         <div className="table-responsive">
           <table className="table align-middle">
-            <caption className="visually-hidden">{statusLabel(status)} orders, oldest first</caption>
+            <caption className="visually-hidden">{statusLabel(status)} orders, earliest pickup first</caption>
             <thead>
               <tr>
                 <th scope="col">Order</th>
                 <th scope="col">Customer</th>
                 <th scope="col">Items</th>
                 <th scope="col">Total</th>
+                <th scope="col">Pickup</th>
                 <th scope="col">Placed</th>
                 <th scope="col">Status</th>
                 <th scope="col"><span className="visually-hidden">Action</span></th>
@@ -94,6 +95,7 @@ export default function OperatorQueue({ onOpen }: { onOpen: (id: number) => void
                   <td>{o.customerName}</td>
                   <td>{o.itemCount}</td>
                   <td className="text-nowrap">{formatTHB(o.totalSatang)}</td>
+                  <td className="text-nowrap">{o.pickupAsap === false ? formatPickup(o) : "ASAP"}</td>
                   <td className="text-nowrap">{minutesAgo(o.createdAt)}</td>
                   <td><div className="d-flex flex-wrap gap-1"><StatusBadge status={o.status} /> <PaymentBadge status={o.paymentStatus} /></div></td>
                   <td>

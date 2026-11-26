@@ -1,6 +1,6 @@
 // F-05 (customer) and F-06 (operator) — one order with its lines, history (FR-18) and the actions allowed for the role (F-07).
 import { useEffect, useState } from "react";
-import { ApiError, OrderDetail as Detail, formatTHB } from "./api.js";
+import { ApiError, OrderDetail as Detail, formatPickup, formatTHB } from "./api.js";
 import { CustomerActions, OperatorActions } from "./OrderActions.js";
 import StatusBadge, { paymentLabel, statusLabel } from "./StatusBadge.js";
 
@@ -15,6 +15,8 @@ export function OrderDetailView({ order, customerName }: { order: Detail; custom
         <p className="small text-muted mb-3">
           Placed {new Date(order.createdAt).toLocaleString()}
           {customerName && <> · Customer: {customerName}</>}
+          <br />
+          <strong>Pickup: {formatPickup(order)}</strong>
         </p>
         <div className="table-responsive">
           <table className="table table-sm">
