@@ -36,3 +36,28 @@ test("E2E-K01 a Customer chooses a pickup time and the Operator sees it in the q
   const [stored] = await sql(`SELECT "pickupAsap" FROM "Order" WHERE "orderNumber" = $1`, [orderNumber]);
   expect(stored.pickupAsap).toBe(false);
 });
+
+test("E2E-SS01 an order picked up today appears in the Operator's sales summary (AC-110, AC-114)", async ({ page }) => {
+  await login(page, "alice@cafe.test");
+  await page.getByRole("button", { name: "Add Croissant" }).click();
+  await page.getByRole("button", { name: "Place order" }).click();
+  const heading = page.getByRole("heading", { name: /^Order ORD-\d{8}-\d{4}$/ });
+  await expect(heading).toBeVisible();
+  const orderNumber = (await heading.textContent())!.replace("Order ", "");
+  await logout(page);
+
+  await login(page, "olivia@cafe.test");
+  await page.getByRole("button", { name: "Sales", exact: true }).click();
+  const before = Number(await page.getByTestId("completed-orders").textContent());
+  await page.getByRole("button", { name: "Order queue", exact: true }).click();
+  for (const step of ["Accept", "Start preparing", "Mark ready", "Picked up"]) {
+    const filter = { Accept: "SUBMITTED", "Start preparing": "ACCEPTED", "Mark ready": "PREPARING", "Picked up": "READY" }[step]!;
+    await page.getByLabel("Status").selectOption(filter);
+    await page.getByRole("button", { name: `${step} ${orderNumber}` }).click();
+    await expect(page.getByRole("status").filter({ hasText: orderNumber })).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Sales", exact: true }).click();
+  await expect(page.getByTestId("completed-orders")).toHaveText(String(before + 1));
+  await expect(page.getByRole("table", { name: "Top items" })).toContainText("Croissant");
+  await page.screenshot({ path: `${SHOTS3}/ss01-sales.png`, fullPage: true });
+});
