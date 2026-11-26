@@ -16,7 +16,10 @@ interface Target {
   id: number;
   orderNumber: string;
   status: string;
+  paymentStatus?: string;
 }
+
+const PAYABLE = ["SUBMITTED", "ACCEPTED", "PREPARING", "READY"]; // BR-13
 
 /** Operator: Accept / Reject on Submitted orders, next lifecycle step, Cancel order on Accepted orders (reason required). */
 export function OperatorActions({
@@ -123,7 +126,7 @@ export function OperatorActions({
   );
 }
 
-/** Customer: Cancel order while Submitted, with a confirmation step (FR-12). */
+/** Customer: Pay now while unpaid and open (F-10, BR-13); Cancel order while Submitted, with a confirmation step (FR-12). */
 export function CustomerActions({
   order,
   onDone,
@@ -135,6 +138,20 @@ export function CustomerActions({
 }) {
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [paying, setPaying] = useState(false);
+
+  async function pay() {
+    setPaying(true);
+    try {
+      await myOrdersApi.pay(order.id);
+      onDone("Payment received (simulated).");
+    } catch (e) {
+      onError(e as ApiError);
+    } finally {
+      setPaying(false);
+    }
+  }
+  const canPay = order.paymentStatus === "UNPAID" && PAYABLE.includes(order.status);
 
   async function cancel() {
     setBusy(true);
@@ -149,14 +166,26 @@ export function CustomerActions({
     }
   }
 
-  if (order.status !== "SUBMITTED") return null;
-  return confirming ? (
-    <div className="alert alert-warning d-flex flex-wrap align-items-center gap-2 mb-0" role="alertdialog" aria-label="Confirm cancellation">
-      <span>Cancel this order? This cannot be undone.</span>
-      <button className="btn btn-danger btn-sm" onClick={cancel} disabled={busy}>{busy ? "Cancelling…" : "Yes, cancel order"}</button>
-      <button className="btn btn-outline-secondary btn-sm" onClick={() => setConfirming(false)} disabled={busy}>Keep order</button>
+  const cancelPart =
+    order.status !== "SUBMITTED" ? null : confirming ? (
+      <div className="alert alert-warning d-flex flex-wrap align-items-center gap-2 mb-0" role="alertdialog" aria-label="Confirm cancellation">
+        <span>Cancel this order? This cannot be undone.</span>
+        <button className="btn btn-danger btn-sm" onClick={cancel} disabled={busy}>{busy ? "Cancelling…" : "Yes, cancel order"}</button>
+        <button className="btn btn-outline-secondary btn-sm" onClick={() => setConfirming(false)} disabled={busy}>Keep order</button>
+      </div>
+    ) : (
+      <button className="btn btn-outline-danger btn-sm" onClick={() => setConfirming(true)}>Cancel order</button>
+    );
+
+  if (!canPay && !cancelPart) return null;
+  return (
+    <div className="d-flex flex-wrap align-items-center gap-2">
+      {canPay && (
+        <button className="btn btn-success btn-sm" onClick={pay} disabled={paying}>
+          {paying ? "Paying…" : "Pay now (simulated)"}
+        </button>
+      )}
+      {cancelPart}
     </div>
-  ) : (
-    <button className="btn btn-outline-danger btn-sm" onClick={() => setConfirming(true)}>Cancel order</button>
   );
 }

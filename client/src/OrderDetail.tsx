@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { ApiError, OrderDetail as Detail, formatTHB } from "./api.js";
 import { CustomerActions, OperatorActions } from "./OrderActions.js";
-import StatusBadge, { statusLabel } from "./StatusBadge.js";
+import StatusBadge, { paymentLabel, statusLabel } from "./StatusBadge.js";
 
 export function OrderDetailView({ order, customerName }: { order: Detail; customerName?: string }) {
   return (
@@ -46,6 +46,13 @@ export function OrderDetailView({ order, customerName }: { order: Detail; custom
           </table>
         </div>
         {order.note && <p className="small"><strong>Note:</strong> {order.note}</p>}
+        {order.paymentStatus && (
+          <p className="small mb-0">
+            <strong>Payment: {paymentLabel(order.paymentStatus)}</strong>
+            {order.paymentStatus === "PAID" && order.paidAt && <> on {new Date(order.paidAt).toLocaleString()}</>}
+            {order.paymentStatus === "UNPAID" && " (pay now or at the counter)"}
+          </p>
+        )}
         <h3 className="h6 mt-3">History</h3>
         <ol className="small mb-0" aria-label="Status history">
           {order.history.map((h, i) => (

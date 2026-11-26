@@ -1,4 +1,4 @@
-// UI-S02, UI-S04 — docs/sprints/sprint-2/sts.md (F-07 customer cancel and reasons, F-08 history). The API module is mocked.
+// UI-S02, UI-S04, UI-S07 — docs/sprints/sprint-2/sts.md (F-07 customer cancel and reasons, F-08 history, F-10 payment). The API module is mocked.
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import OrderDetailPage from "../src/OrderDetail.js";
@@ -30,6 +30,7 @@ const base: any = {
 
 beforeEach(() => {
   vi.mocked(api.myOrdersApi.cancel).mockReset();
+  vi.mocked(api.myOrdersApi.pay).mockReset();
 });
 
 describe("Customer order detail", () => {
@@ -68,5 +69,19 @@ describe("Customer order detail", () => {
     expect(items[0]).toHaveTextContent("Submitted by Alice Customer");
     expect(items[2]).toHaveTextContent("Accepted → Preparing by Olivia Operator");
     expect(items[4]).toHaveTextContent("Ready → Picked up by Olivia Operator");
+  });
+
+  it("UI-S07 pays an unpaid order once and shows Paid (AC-80)", async () => {
+    const user = userEvent.setup();
+    const paid = { ...base, paymentStatus: "PAID", paidAt: at };
+    const load = vi.fn().mockResolvedValueOnce(base).mockResolvedValueOnce(paid);
+    vi.mocked(api.myOrdersApi.pay).mockResolvedValueOnce(paid);
+    render(<OrderDetailPage role="CUSTOMER" load={load} onBack={vi.fn()} />);
+    expect(await screen.findByText(/Payment: Unpaid/)).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Pay now (simulated)" }));
+    expect(api.myOrdersApi.pay).toHaveBeenCalledTimes(1);
+    expect(api.myOrdersApi.pay).toHaveBeenCalledWith(7);
+    expect(await screen.findByText(/Payment: Paid/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Pay now (simulated)" })).not.toBeInTheDocument();
   });
 });

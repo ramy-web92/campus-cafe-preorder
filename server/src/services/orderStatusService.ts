@@ -41,6 +41,11 @@ export async function changeStatus(change: StatusChange): Promise<void> {
     });
     if (count !== 1) throw new HttpError(409, "INVALID_TRANSITION", "This order was just handled by someone else.");
 
+    // BR-13: cancelling or rejecting a paid order refunds it, in the same transaction.
+    if (to === "CANCELLED" || to === "REJECTED") {
+      await tx.order.updateMany({ where: { id: orderId, paymentStatus: "PAID" }, data: { paymentStatus: "REFUNDED" } });
+    }
+
     await tx.orderStatusChange.create({
       data: { orderId, fromStatus: from, toStatus: to, actorId, reason: change.reason ?? null }, // BR-11
     });

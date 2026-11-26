@@ -77,6 +77,8 @@ export interface OrderDetail {
   note: string | null;
   createdAt: string;
   acceptedAt: string | null;
+  paymentStatus: PaymentStatus; // F-10
+  paidAt: string | null;
   lines: OrderLine[];
   history: { fromStatus: string | null; toStatus: string; actorName: string; reason: string | null; createdAt: string }[];
 }
@@ -114,10 +116,12 @@ export function formatTHB(satang: number): string {
 // ---------------------------------------------------------------------------
 // My orders (F-05)
 
+export type PaymentStatus = "UNPAID" | "PAID" | "REFUNDED";
 export interface OrderSummary {
   id: number;
   orderNumber: string;
   status: string;
+  paymentStatus: PaymentStatus;
   totalSatang: number;
   itemCount: number;
   createdAt: string;
@@ -132,6 +136,8 @@ export const myOrdersApi = {
   get: (id: number) => api<{ order: OrderDetail }>(`/api/orders/${id}`).then((r) => r.order),
   // F-07
   cancel: (id: number) => api<{ order: OrderDetail }>(`/api/orders/${id}/cancel`, { method: "POST" }).then((r) => r.order),
+  // F-10
+  pay: (id: number) => api<{ order: OrderDetail }>(`/api/orders/${id}/pay`, { method: "POST" }).then((r) => r.order),
 };
 
 // ---------------------------------------------------------------------------

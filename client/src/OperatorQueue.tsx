@@ -1,7 +1,7 @@
 // F-06/F-07 — incoming orders, oldest first, with Accept / Reject / Cancel. The server decides whether the change is still allowed.
 import { useEffect, useState } from "react";
 import { ApiError, Page, QueueOrder, formatTHB, operatorApi } from "./api.js";
-import StatusBadge, { statusLabel } from "./StatusBadge.js";
+import StatusBadge, { PaymentBadge, statusLabel } from "./StatusBadge.js";
 import { OperatorActions } from "./OrderActions.js";
 
 // F-08: every status can be listed (FR-11, AC-66).
@@ -95,7 +95,7 @@ export default function OperatorQueue({ onOpen }: { onOpen: (id: number) => void
                   <td>{o.itemCount}</td>
                   <td className="text-nowrap">{formatTHB(o.totalSatang)}</td>
                   <td className="text-nowrap">{minutesAgo(o.createdAt)}</td>
-                  <td><StatusBadge status={o.status} /></td>
+                  <td><div className="d-flex flex-wrap gap-1"><StatusBadge status={o.status} /> <PaymentBadge status={o.paymentStatus} /></div></td>
                   <td>
                     <OperatorActions order={o} onDone={done} onError={(err) => failed(o, err)} />
                   </td>

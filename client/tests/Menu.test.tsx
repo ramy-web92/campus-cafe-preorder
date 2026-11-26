@@ -78,7 +78,7 @@ describe("Menu and cart", () => {
     const user = userEvent.setup();
     vi.mocked(api.ordersApi.create).mockResolvedValueOnce({
       id: 12, orderNumber: "ORD-20261106-0004", status: "SUBMITTED", totalSatang: 17500, note: null,
-      createdAt: "2026-11-06T03:00:00Z", acceptedAt: null, lines: [], history: [],
+      createdAt: "2026-11-06T03:00:00Z", acceptedAt: null, paymentStatus: "UNPAID", paidAt: null, lines: [], history: [],
     });
     render(<Menu />);
     await user.click(await screen.findByRole("button", { name: "Add Iced Latte" }));

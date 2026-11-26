@@ -1,8 +1,8 @@
-// F-04, F-05 and F-07 (customer cancel) endpoints (docs/sprints/sprint-1/F-03-F-04-place-order.md, F-05-my-orders.md).
+// F-04, F-05, F-07 (customer cancel) and F-10 (pay) endpoints (docs/sprints/sprint-1/F-03-F-04-place-order.md, F-05-my-orders.md).
 import { Router } from "express";
 import { requireRole } from "../http/auth.js";
 import { HttpError } from "../http/errors.js";
-import { cancelOrderByCustomer, createOrder, getCustomerOrder, listCustomerOrders, parsePage } from "../services/orderService.js";
+import { cancelOrderByCustomer, createOrder, payOrder, getCustomerOrder, listCustomerOrders, parsePage } from "../services/orderService.js";
 
 export const orderRouter = Router();
 
@@ -41,6 +41,15 @@ orderRouter.get("/api/orders/:id", requireRole("CUSTOMER"), async (req, res, nex
 orderRouter.post("/api/orders/:id/cancel", requireRole("CUSTOMER"), async (req, res, next) => {
   try {
     res.status(200).json({ order: await cancelOrderByCustomer(req.session.userId!, parseId(req.params.id)) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// F-10 (docs/sprints/sprint-2/F-10-payment.md)
+orderRouter.post("/api/orders/:id/pay", requireRole("CUSTOMER"), async (req, res, next) => {
+  try {
+    res.status(200).json({ order: await payOrder(req.session.userId!, parseId(req.params.id)) });
   } catch (err) {
     next(err);
   }
