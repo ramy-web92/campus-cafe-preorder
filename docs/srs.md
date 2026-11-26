@@ -1,6 +1,6 @@
 # KMUTT Café Pre-Order — Software Requirements Specification (SRS)
 
-> CPE 334 Group Project · Theme 4 — E-Commerce or Ordering System · Version 1.1 (CR-01, Lab 7)
+> CPE 334 Group Project · Theme 4 — E-Commerce or Ordering System · Version 1.2 (Sprint 3 contracts)
 > Team: FAHS Rémy (69540460043) · DARWICHE Maxime (69540460044)
 > Change history is kept in Git; revisions are listed in §8.
 
@@ -37,7 +37,7 @@ Each account has exactly one role. Operators handle **all orders of the café** 
 | FR-05 | A Customer can submit an order with one or more lines (menu item + quantity) and an optional note; the system stores the order, assigns an order number and returns its detail. | 1 |
 | FR-06 | A Customer can list their own orders (newest first) with number, date, total and status. | 1 |
 | FR-07 | A Customer can open the detail of one of their orders: lines with item name, unit price, quantity, line total, order total, status and status history. | 1 |
-| FR-08 | An Operator can view incoming orders (default: status Submitted, oldest first) and filter the list by status. | 1 |
+| FR-08 | An Operator can view incoming orders (default: status Submitted, oldest first — earliest pickup first once FR-15 is delivered) and filter the list by status. | 1 |
 | FR-09 | An Operator can accept a Submitted order; the status changes to Accepted and the change is recorded in the history. | 1 |
 | FR-10 | An Operator can reject a Submitted order with a reason. | 2 |
 | FR-11 | An Operator can move an order through Accepted → Preparing → Ready → Picked up. | 2 |
@@ -101,10 +101,12 @@ Each account has exactly one role. Operators handle **all orders of the café** 
 | D-06 | Decision | Accounts are seeded (no self-registration), as allowed for Sprint 1. | Recorded. |
 | D-07 | Decision | Time zone Asia/Bangkok for order numbers, opening hours and daily summaries. | Recorded. |
 | D-08 | Decision | Session-cookie authentication (server-side session store in PostgreSQL) instead of JWT, so logout really invalidates the session. | Recorded; see SDS §5. |
+| D-09 | Decision | Pickup time is optional: "As soon as possible" (default, stored as the submission time) or a chosen time; BR-14 applies only to a chosen time, so ordering still works outside opening hours. | Recorded with the Sprint 3 contracts (F-11). |
 | A-01 | Assumption | Each account has exactly one role; an Operator does not place orders for themselves through the Customer screens. | Accepted for the whole product. |
 | A-02 | Assumption | Availability is a simple "available / sold out" flag set by Operators; no stock counting. | Accepted. |
 | Q-01 | Question | Can a Customer edit an order after submission? | Resolved: no. They can cancel while Submitted and order again (keeps BR-02 simple). |
 | Q-02 | Question | Can Operators cancel an accepted order? | Resolved: yes, Accepted → Cancelled (e.g. item ran out), Sprint 2. |
+| Q-03 | Question | Must every order have a chosen pickup time? | Resolved: no, see D-09. |
 
 ## 8. Revision history
 
@@ -112,3 +114,4 @@ Each account has exactly one role. Operators handle **all orders of the café** 
 |---|---|---|
 | 1.0 | 2026-11-05 | Baseline for Project Deliverable 1. |
 | 1.1 | 2026-11-25 | CR-01 (Lab 7): BR-03 line quantity limit changed from 1–10 to 1–5 for new orders; D-05 updated. Student ID in the header corrected. |
+| 1.2 | 2026-11-26 | Sprint 3 contracts: D-09 (pickup time optional, BR-14 on chosen times), Q-03; FR-08 note on the queue order. No requirement removed. |
