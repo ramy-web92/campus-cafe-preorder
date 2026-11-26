@@ -1,4 +1,4 @@
-// UI-03 — docs/sprints/sprint-1/sts.md (AC-30, AC-31, AC-32); UI-S01 — docs/sprints/sprint-2/sts.md. The API module is mocked.
+// UI-03 — docs/sprints/sprint-1/sts.md (AC-30, AC-31, AC-32); UI-S01, UI-S03 — docs/sprints/sprint-2/sts.md. The API module is mocked.
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import OperatorQueue from "../src/OperatorQueue.js";
@@ -16,6 +16,7 @@ beforeEach(() => {
   vi.mocked(api.operatorApi.list).mockReset();
   vi.mocked(api.operatorApi.accept).mockReset();
   vi.mocked(api.operatorApi.reject).mockReset();
+  vi.mocked(api.operatorApi.setStatus).mockReset();
 });
 
 describe("Operator queue", () => {
@@ -72,5 +73,31 @@ describe("Operator queue", () => {
     expect(api.operatorApi.reject).toHaveBeenCalledTimes(1);
     expect(api.operatorApi.reject).toHaveBeenCalledWith(12, "Sold out of milk");
     expect(await screen.findByText("Order ORD-20261106-0004 rejected.")).toBeInTheDocument();
+  });
+
+  it("UI-S03 shows the next lifecycle step for each status and sends it (AC-60, AC-66)", async () => {
+    const user = userEvent.setup();
+    const rows = [
+      { ...order, id: 21, orderNumber: "ORD-20261125-0021", status: "ACCEPTED" },
+      { ...order, id: 22, orderNumber: "ORD-20261125-0022", status: "PREPARING" },
+      { ...order, id: 23, orderNumber: "ORD-20261125-0023", status: "READY" },
+      { ...order, id: 24, orderNumber: "ORD-20261125-0024", status: "PICKED_UP" },
+    ];
+    vi.mocked(api.operatorApi.list).mockResolvedValue(page(rows));
+    vi.mocked(api.operatorApi.setStatus).mockResolvedValueOnce({} as any);
+    render(<OperatorQueue onOpen={vi.fn()} />);
+    expect(await screen.findByRole("button", { name: "Start preparing ORD-20261125-0021" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Mark ready ORD-20261125-0022" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Picked up ORD-20261125-0023" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: /ORD-20261125-0024/ })?.textContent).not.toMatch(/Start|Mark|Picked/);
+
+    await user.click(screen.getByRole("button", { name: "Start preparing ORD-20261125-0021" }));
+    expect(api.operatorApi.setStatus).toHaveBeenCalledWith(21, "PREPARING");
+    expect(await screen.findByText("Order ORD-20261125-0021 is now Preparing.")).toBeInTheDocument();
+
+    for (const status of ["PREPARING", "READY", "PICKED_UP", "REJECTED", "CANCELLED"]) {
+      await user.selectOptions(screen.getByLabelText("Status"), status);
+      await waitFor(() => expect(api.operatorApi.list).toHaveBeenLastCalledWith(status));
+    }
   });
 });

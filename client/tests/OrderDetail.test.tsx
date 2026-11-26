@@ -1,5 +1,5 @@
-// UI-S02 — docs/sprints/sprint-2/sts.md (F-07 customer cancel and reasons). The API module is mocked.
-import { render, screen } from "@testing-library/react";
+// UI-S02, UI-S04 — docs/sprints/sprint-2/sts.md (F-07 customer cancel and reasons, F-08 history). The API module is mocked.
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import OrderDetailPage from "../src/OrderDetail.js";
 import * as api from "../src/api.js";
@@ -56,5 +56,17 @@ describe("Customer order detail", () => {
     render(<OrderDetailPage role="CUSTOMER" load={vi.fn().mockResolvedValue(rejected)} onBack={vi.fn()} />);
     expect(await screen.findByText(/Reason: Sold out of milk/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Cancel order" })).not.toBeInTheDocument();
+  });
+
+  it("UI-S04 lists the whole history in order with actor names (AC-64)", async () => {
+    const steps = ["ACCEPTED", "PREPARING", "READY", "PICKED_UP"];
+    const history = [base.history[0], ...steps.map((to, i) => ({ fromStatus: i === 0 ? "SUBMITTED" : steps[i - 1], toStatus: to, actorName: "Olivia Operator", reason: null, createdAt: at }))];
+    render(<OrderDetailPage role="CUSTOMER" load={vi.fn().mockResolvedValue({ ...base, status: "PICKED_UP", history })} onBack={vi.fn()} />);
+    const list = await screen.findByRole("list", { name: "Status history" });
+    const items = within(list).getAllByRole("listitem");
+    expect(items).toHaveLength(5);
+    expect(items[0]).toHaveTextContent("Submitted by Alice Customer");
+    expect(items[2]).toHaveTextContent("Accepted → Preparing by Olivia Operator");
+    expect(items[4]).toHaveTextContent("Ready → Picked up by Olivia Operator");
   });
 });
