@@ -1,6 +1,6 @@
 # Sprint 1 — Software Test Specification (STS)
 
-> Version 1.2 (CR-01, Lab 7) — test design recorded before implementation (v1.0, PR #10); results filled from the release run (v1.1). The **Result** column is filled from the release run on `main` (tag `v0.1.0`).
+> Version 1.3 — test design recorded before implementation (v1.0, PR #10); results filled from the release run (v1.1); CR-01 tests (v1.2, Lab 7) passed in the CR-01 release (PR #50). Sprint 1 tests stay in the regression suite of every later release.
 > Levels: **Unit** (pure logic) · **API** (HTTP + real PostgreSQL test database) · **UI** (React component, API mocked) · **E2E** (Playwright, browser + API + database).
 > Test database: `cafe_test`, reset and seeded before the suite (`npm test` runs `prisma migrate reset --force` on the test URL).
 
@@ -23,15 +23,15 @@
 |---|---|---|---|---|---|---|---|
 | TEST-M01 | AC-10 | API | Seeded menu with 2 sold-out items | `GET /api/menu` as customer | 200, categories in order, every seeded item present, sold-out items `isAvailable: false` | server/tests/api/menu.api.test.ts || Pass |
 | TEST-U01 | AC-12 | Unit | Lines with prices 6500 × 2 and 4500 × 1 | `priceOrder(lines, items)` | line totals 13000 and 4500, total 17500 | server/tests/unit/order-rules.test.ts || Pass |
-| TEST-U02 | AC-15 | Unit | *(revised, CR-01)* Quantities 1, 5 / 0, 6, 10, 11, -1, 1.5, "2", null | `validateOrderInput` | 1 and 5 valid; others field error "Quantity must be an integer from 1 to 5." | order-rules.test.ts || Pending CR-01 |
+| TEST-U02 | AC-15 | Unit | *(revised, CR-01)* Quantities 1, 5 / 0, 6, 10, 11, -1, 1.5, "2", null | `validateOrderInput` | 1 and 5 valid; others field error "Quantity must be an integer from 1 to 5." | order-rules.test.ts || Pass (CR-01, PR #50) |
 | TEST-U03 | AC-16 | Unit | 0 lines, 20 lines, 21 lines, duplicate item | `validateOrderInput` | 20 valid; 0, 21 and duplicate rejected with field errors | order-rules.test.ts || Pass |
 | TEST-U04 | AC-18 | Unit | Date 2026-11-05T18:30Z (= 06 Nov in Bangkok), sequence 4 | `formatOrderNumber` | `ORD-20261106-0004` | order-rules.test.ts || Pass |
 | TEST-O01 | AC-11 | API | Customer alice, two available items | `POST /api/orders` | 201, status SUBMITTED, lines returned; rows exist in DB for alice | server/tests/api/orders.api.test.ts || Pass |
 | TEST-O02 | AC-12 | API | Items priced 6500 and 4500 in DB | Submit 2 × A + 1 × B | Stored `totalSatang` 17500 and line totals 13000 / 4500 | orders.api.test.ts || Pass |
 | TEST-O03 | AC-13 | API | Body adds `unitPriceSatang: 1`, `totalSatang: 1`, `status: "ACCEPTED"`, `customerId` of bob | Submit | Stored prices from DB, total 17500, status SUBMITTED, customer alice | orders.api.test.ts || Pass |
 | TEST-O04 | AC-14 | API | Order submitted at 6500 | Update item price to 9900 in DB, then `GET /api/orders/:id` | Line unit price still 6500, total unchanged | orders.api.test.ts || Pass |
-| TEST-O05 | AC-15 | API | *(revised, CR-01)* Quantities 0, 6, 10, 11, 1.5, -1, "2" / 1 and 5 | Submit each | 422 `VALIDATION_ERROR` with field error and order, line and history counts unchanged / 201 with total = price × quantity | orders.api.test.ts || Pending CR-01 |
-| TEST-O14 | AC-15a | API | *(new, CR-01)* Order for alice inserted directly in the DB with Croissant × 10 (as stored before CR-01) | `GET /api/orders/:id` and `GET /api/orders` as alice; operator `GET /api/operator/orders` and accept | Quantity 10, line total and total unchanged; listed for alice and in the queue; accept returns 200 | orders.api.test.ts || Pending CR-01 |
+| TEST-O05 | AC-15 | API | *(revised, CR-01)* Quantities 0, 6, 10, 11, 1.5, -1, "2" / 1 and 5 | Submit each | 422 `VALIDATION_ERROR` with field error and order, line and history counts unchanged / 201 with total = price × quantity | orders.api.test.ts || Pass (CR-01, PR #50) |
+| TEST-O14 | AC-15a | API | *(new, CR-01)* Order for alice inserted directly in the DB with Croissant × 10 (as stored before CR-01) | `GET /api/orders/:id` and `GET /api/orders` as alice; operator `GET /api/operator/orders` and accept | Quantity 10, line total and total unchanged; listed for alice and in the queue; accept returns 200 | orders.api.test.ts || Pass (CR-01, PR #50) |
 | TEST-O06 | AC-16 | API | `lines: []`, 21 lines, duplicate item | Submit each | 422, order count unchanged | orders.api.test.ts || Pass |
 | TEST-O07 | AC-17 | API | One available line + one sold-out line; one unknown id | Submit | 422 `ITEM_UNAVAILABLE` naming the item; orders, lines and history counts unchanged | orders.api.test.ts || Pass |
 | TEST-O08 | AC-18 | API | Two orders on the same day | Submit twice | Numbers match the format and the second is the first + 1 | orders.api.test.ts || Pass |
@@ -66,7 +66,7 @@
 | Test | AC | Level | Precondition / input | Action | Expected result | File | Result |
 |---|---|---|---|---|---|---|---|
 | UI-01 | AC-10 | UI | Mocked menu with one sold-out item | Render Menu | Sold-out item shows "Sold out" text and a disabled Add button | client/tests/Menu.test.tsx || Pass |
-| UI-02 | AC-15, AC-17 | UI | Cart with 2 lines; API mocked to return 422 `ITEM_UNAVAILABLE` | Click Place order | Message shown on the sold-out line; cart kept; button re-enabled; quantity stepper cannot go below 1 or above 5 *(revised, CR-01; was 10)* | client/tests/Menu.test.tsx || Pending CR-01 |
+| UI-02 | AC-15, AC-17 | UI | Cart with 2 lines; API mocked to return 422 `ITEM_UNAVAILABLE` | Click Place order | Message shown on the sold-out line; cart kept; button re-enabled; quantity stepper cannot go below 1 or above 5 *(revised, CR-01; was 10)* | client/tests/Menu.test.tsx || Pass (CR-01, PR #50) |
 | UI-03 | AC-32 | UI | Queue with one order; API mocked 409 | Click Accept | Conflict message shown and the list reloads | client/tests/OperatorQueue.test.tsx || Pass |
 
 ## End-to-end journeys
@@ -119,3 +119,4 @@ For the rule work in F-04 (BR-01, BR-03–BR-05) and F-06 (BR-09), the tests wer
 | 1.0 | 2026-11-05 | Initial STS |
 | 1.1 | 2026-11-07 | Result column filled from the release run; E2E-05/E2E-06 added; TDD evidence recorded |
 | 1.2 | 2026-11-25 | CR-01 (Lab 7), written before the implementation: TEST-U02, TEST-O05 and UI-02 revised for the 1–5 limit (old expected result "10 accepted" replaced, see change request); TEST-O14 added for orders stored before the change. Results to be filled from the CR-01 release run. |
+| 1.3 | 2026-11-27 | CR-01 results filled (Pass, released in PR #50). |

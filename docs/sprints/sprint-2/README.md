@@ -55,3 +55,4 @@ A feature is **done** only when every item below is true and the evidence exists
 | Version | Date | Change | Author |
 |---|---|---|---|
 | 1.0 | 2026-11-25 | Initial Sprint 2 contracts, STS and DoD | Rémy |
+| 1.1 | 2026-11-27 | Release notes added ([release.md](release.md)); all Sprint 2 features done | Rémy |
