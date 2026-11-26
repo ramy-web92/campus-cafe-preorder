@@ -6,6 +6,7 @@ import Menu from "./Menu.js";
 import MyOrders from "./MyOrders.js";
 import OrderDetailPage from "./OrderDetail.js";
 import OperatorQueue from "./OperatorQueue.js";
+import MenuManagement from "./MenuManagement.js";
 
 const ROLE_LABELS = { CUSTOMER: "Customer", OPERATOR: "Operator" } as const;
 
@@ -14,6 +15,8 @@ export default function App() {
   const [checking, setChecking] = useState(true);
   // Customer screens (F-03..F-05)
   const [view, setView] = useState<"menu" | "orders" | "detail">("menu");
+  // Operator screens (F-06..F-09)
+  const [opView, setOpView] = useState<"queue" | "menu">("queue");
   const [orderId, setOrderId] = useState<number | null>(null);
   const loadCustomerOrder = useCallback(() => myOrdersApi.get(orderId!), [orderId]);
   const loadOperatorOrder = useCallback(() => operatorApi.get(orderId!), [orderId]);
@@ -37,6 +40,7 @@ export default function App() {
     } finally {
       setUser(null);
       setView("menu");
+      setOpView("queue");
     }
   }
 
@@ -79,11 +83,25 @@ export default function App() {
             {view === "detail" && orderId && <OrderDetailPage role="CUSTOMER" load={loadCustomerOrder} onBack={() => setView("orders")} backLabel="← My orders" />}
           </>
         ) : (
-          view === "detail" && orderId ? (
-            <OrderDetailPage role="OPERATOR" load={loadOperatorOrder} onBack={() => setView("menu")} backLabel="← Order queue" />
-          ) : (
-            <OperatorQueue onOpen={openOrder} />
-          )
+          <>
+            <nav aria-label="Operator" className="mb-3">
+              <ul className="nav nav-pills gap-1">
+                <li className="nav-item">
+                  <button className={`nav-link ${opView === "queue" ? "active" : ""}`} aria-current={opView === "queue" ? "page" : undefined} onClick={() => { setOpView("queue"); setView("menu"); }}>Order queue</button>
+                </li>
+                <li className="nav-item">
+                  <button className={`nav-link ${opView === "menu" ? "active" : ""}`} aria-current={opView === "menu" ? "page" : undefined} onClick={() => setOpView("menu")}>Menu</button>
+                </li>
+              </ul>
+            </nav>
+            {opView === "menu" ? (
+              <MenuManagement />
+            ) : view === "detail" && orderId ? (
+              <OrderDetailPage role="OPERATOR" load={loadOperatorOrder} onBack={() => setView("menu")} backLabel="← Order queue" />
+            ) : (
+              <OperatorQueue onOpen={openOrder} />
+            )}
+          </>
         )}
       </main>
       <footer className="mt-5 pt-3 border-top small text-muted text-center">

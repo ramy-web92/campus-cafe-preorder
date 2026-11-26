@@ -85,6 +85,22 @@ export const menuApi = {
   get: () => api<{ categories: MenuCategory[] }>("/api/menu").then((r) => r.categories),
 };
 
+// F-09 menu management (Operator)
+export interface MenuItemInput {
+  categoryId: number;
+  name: string;
+  description: string;
+  priceSatang: number;
+  isAvailable: boolean;
+}
+export type AdminMenuItem = MenuItem & { categoryId: number };
+export const menuAdminApi = {
+  create: (item: MenuItemInput) =>
+    api<{ item: AdminMenuItem }>("/api/operator/menu-items", { method: "POST", body: JSON.stringify(item) }).then((r) => r.item),
+  update: (id: number, changes: Partial<MenuItemInput>) =>
+    api<{ item: AdminMenuItem }>(`/api/operator/menu-items/${id}`, { method: "PATCH", body: JSON.stringify(changes) }).then((r) => r.item),
+};
+
 export const ordersApi = {
   create: (lines: { menuItemId: number; quantity: number }[], note: string) =>
     api<{ order: OrderDetail }>("/api/orders", { method: "POST", body: JSON.stringify({ lines, note: note || undefined }) }).then((r) => r.order),
