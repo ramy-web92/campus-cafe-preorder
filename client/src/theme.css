@@ -7,3 +7,7 @@
 }
 .btn-primary { --bs-btn-bg: var(--cafe-green); --bs-btn-border-color: var(--cafe-green); --bs-btn-hover-bg: var(--cafe-green-dark); --bs-btn-hover-border-color: var(--cafe-green-dark); }
 .text-brand { color: var(--cafe-green); }
+
+/* NFR-09 (E2E-R01): .visually-hidden is position:absolute; without a positioned parent, a hidden table header
+   inside .table-responsive was placed outside the scroll box and widened the whole page at 360 px. */
+.table-responsive { position: relative; }

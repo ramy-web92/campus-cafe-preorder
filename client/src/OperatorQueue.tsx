@@ -1,9 +1,11 @@
-// F-06 — incoming orders, oldest first, with Accept. The server decides whether the order can still be accepted.
+// F-06/F-07 — incoming orders, oldest first, with Accept / Reject / Cancel. The server decides whether the change is still allowed.
 import { useEffect, useState } from "react";
 import { ApiError, Page, QueueOrder, formatTHB, operatorApi } from "./api.js";
-import StatusBadge, { statusLabel } from "./StatusBadge.js";
+import StatusBadge, { PaymentBadge, statusLabel } from "./StatusBadge.js";
+import { OperatorActions } from "./OrderActions.js";
 
-const FILTERS = ["SUBMITTED", "ACCEPTED"];
+// F-08: every status can be listed (FR-11, AC-66).
+const FILTERS = ["SUBMITTED", "ACCEPTED", "PREPARING", "READY", "PICKED_UP", "REJECTED", "CANCELLED"];
 
 function minutesAgo(iso: string) {
   const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
@@ -14,7 +16,6 @@ export default function OperatorQueue({ onOpen }: { onOpen: (id: number) => void
   const [status, setStatus] = useState("SUBMITTED");
   const [data, setData] = useState<Page<QueueOrder> | null>(null);
   const [error, setError] = useState("");
-  const [busyId, setBusyId] = useState<number | null>(null);
   const [message, setMessage] = useState<{ kind: "success" | "warning"; text: string } | null>(null);
 
   async function load(s = status) {
@@ -30,23 +31,16 @@ export default function OperatorQueue({ onOpen }: { onOpen: (id: number) => void
     load(status);
   }, [status]);
 
-  async function accept(o: QueueOrder) {
-    if (busyId) return;
-    setBusyId(o.id);
-    setMessage(null);
-    try {
-      await operatorApi.accept(o.id);
-      setMessage({ kind: "success", text: `Order ${o.orderNumber} accepted.` });
-    } catch (e) {
-      const err = e as ApiError;
-      setMessage({
-        kind: "warning",
-        text: err.status === 409 ? `Order ${o.orderNumber} was already handled. The list has been refreshed.` : err.message,
-      });
-    } finally {
-      setBusyId(null);
-      load();
-    }
+  function done(text: string) {
+    setMessage({ kind: "success", text });
+    load();
+  }
+  function failed(o: QueueOrder, err: ApiError) {
+    setMessage({
+      kind: "warning",
+      text: err.status === 409 ? `Order ${o.orderNumber} was already handled. The list has been refreshed.` : err.message,
+    });
+    load();
   }
 
   return (
@@ -101,13 +95,9 @@ export default function OperatorQueue({ onOpen }: { onOpen: (id: number) => void
                   <td>{o.itemCount}</td>
                   <td className="text-nowrap">{formatTHB(o.totalSatang)}</td>
                   <td className="text-nowrap">{minutesAgo(o.createdAt)}</td>
-                  <td><StatusBadge status={o.status} /></td>
+                  <td><div className="d-flex flex-wrap gap-1"><StatusBadge status={o.status} /> <PaymentBadge status={o.paymentStatus} /></div></td>
                   <td>
-                    {o.status === "SUBMITTED" && (
-                      <button className="btn btn-primary btn-sm" onClick={() => accept(o)} disabled={busyId !== null} aria-label={`Accept ${o.orderNumber}`}>
-                        {busyId === o.id ? "Accepting…" : "Accept"}
-                      </button>
-                    )}
+                    <OperatorActions order={o} onDone={done} onError={(err) => failed(o, err)} />
                   </td>
                 </tr>
               ))}

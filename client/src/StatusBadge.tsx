@@ -22,3 +22,25 @@ export default function StatusBadge({ status }: { status: string }) {
     </span>
   );
 }
+
+// F-10 payment status, also text + icon.
+const PAYMENT: Record<string, { label: string; icon: string; cls: string }> = {
+  UNPAID: { label: "Unpaid", icon: "○", cls: "bg-light text-dark border" },
+  PAID: { label: "Paid", icon: "฿", cls: "bg-success-subtle text-success-emphasis" },
+  REFUNDED: { label: "Refunded", icon: "↺", cls: "bg-secondary-subtle text-secondary-emphasis" },
+};
+
+export function paymentLabel(status: string) {
+  return PAYMENT[status]?.label ?? status;
+}
+
+export function PaymentBadge({ status }: { status?: string }) {
+  if (!status) return null;
+  const m = PAYMENT[status] ?? { label: status, icon: "", cls: "bg-light" };
+  return (
+    <span className={`badge rounded-pill ${m.cls}`}>
+      <span aria-hidden="true">{m.icon} </span>
+      {m.label}
+    </span>
+  );
+}

@@ -77,12 +77,30 @@ export interface OrderDetail {
   note: string | null;
   createdAt: string;
   acceptedAt: string | null;
+  paymentStatus: PaymentStatus; // F-10
+  paidAt: string | null;
   lines: OrderLine[];
   history: { fromStatus: string | null; toStatus: string; actorName: string; reason: string | null; createdAt: string }[];
 }
 
 export const menuApi = {
   get: () => api<{ categories: MenuCategory[] }>("/api/menu").then((r) => r.categories),
+};
+
+// F-09 menu management (Operator)
+export interface MenuItemInput {
+  categoryId: number;
+  name: string;
+  description: string;
+  priceSatang: number;
+  isAvailable: boolean;
+}
+export type AdminMenuItem = MenuItem & { categoryId: number };
+export const menuAdminApi = {
+  create: (item: MenuItemInput) =>
+    api<{ item: AdminMenuItem }>("/api/operator/menu-items", { method: "POST", body: JSON.stringify(item) }).then((r) => r.item),
+  update: (id: number, changes: Partial<MenuItemInput>) =>
+    api<{ item: AdminMenuItem }>(`/api/operator/menu-items/${id}`, { method: "PATCH", body: JSON.stringify(changes) }).then((r) => r.item),
 };
 
 export const ordersApi = {
@@ -98,10 +116,12 @@ export function formatTHB(satang: number): string {
 // ---------------------------------------------------------------------------
 // My orders (F-05)
 
+export type PaymentStatus = "UNPAID" | "PAID" | "REFUNDED";
 export interface OrderSummary {
   id: number;
   orderNumber: string;
   status: string;
+  paymentStatus: PaymentStatus;
   totalSatang: number;
   itemCount: number;
   createdAt: string;
@@ -114,10 +134,14 @@ export interface Page<T> {
 export const myOrdersApi = {
   list: (page = 1) => api<Page<OrderSummary>>(`/api/orders?page=${page}`),
   get: (id: number) => api<{ order: OrderDetail }>(`/api/orders/${id}`).then((r) => r.order),
+  // F-07
+  cancel: (id: number) => api<{ order: OrderDetail }>(`/api/orders/${id}/cancel`, { method: "POST" }).then((r) => r.order),
+  // F-10
+  pay: (id: number) => api<{ order: OrderDetail }>(`/api/orders/${id}/pay`, { method: "POST" }).then((r) => r.order),
 };
 
 // ---------------------------------------------------------------------------
-// Operator queue and accept (F-06)
+// Operator queue and actions (F-06, F-07, F-08)
 
 export interface QueueOrder extends OrderSummary {
   customerName: string;
@@ -127,4 +151,12 @@ export const operatorApi = {
   list: (status = "SUBMITTED", page = 1) => api<Page<QueueOrder>>(`/api/operator/orders?status=${status}&page=${page}`),
   get: (id: number) => api<{ order: OrderDetail & { customer: { id: number; name: string } } }>(`/api/operator/orders/${id}`).then((r) => r.order),
   accept: (id: number) => api<{ order: OrderDetail }>(`/api/operator/orders/${id}/accept`, { method: "POST" }).then((r) => r.order),
+  // F-07
+  reject: (id: number, reason: string) =>
+    api<{ order: OrderDetail }>(`/api/operator/orders/${id}/reject`, { method: "POST", body: JSON.stringify({ reason }) }).then((r) => r.order),
+  cancel: (id: number, reason: string) =>
+    api<{ order: OrderDetail }>(`/api/operator/orders/${id}/cancel`, { method: "POST", body: JSON.stringify({ reason }) }).then((r) => r.order),
+  // F-08
+  setStatus: (id: number, status: "PREPARING" | "READY" | "PICKED_UP") =>
+    api<{ order: OrderDetail }>(`/api/operator/orders/${id}/status`, { method: "POST", body: JSON.stringify({ status }) }).then((r) => r.order),
 };
