@@ -3,12 +3,12 @@ export type OrderStatus = "SUBMITTED" | "ACCEPTED" | "PREPARING" | "READY" | "PI
 
 export const ORDER_STATUSES: OrderStatus[] = ["SUBMITTED", "ACCEPTED", "PREPARING", "READY", "PICKED_UP", "REJECTED", "CANCELLED"];
 
-// BR-06 matrix. Sprint 1: accept. Sprint 2 (F-07): reject and cancel.
+// BR-06 matrix. Sprint 1: accept. Sprint 2: reject and cancel (F-07), fulfilment lifecycle (F-08).
 const ALLOWED: Record<OrderStatus, OrderStatus[]> = {
   SUBMITTED: ["ACCEPTED", "REJECTED", "CANCELLED"],
-  ACCEPTED: ["CANCELLED"],
-  PREPARING: [],
-  READY: [],
+  ACCEPTED: ["PREPARING", "CANCELLED"],
+  PREPARING: ["READY"],
+  READY: ["PICKED_UP"],
   PICKED_UP: [],
   REJECTED: [],
   CANCELLED: [],
@@ -27,3 +27,6 @@ export function validateReason(raw: unknown): { value: string } | { error: strin
   if (value.length < 1 || value.length > 300) return { error: REASON_ERROR };
   return { value };
 }
+
+/** F-08: targets of the lifecycle endpoint (accept, reject and cancel have their own endpoints). */
+export const LIFECYCLE_TARGETS: OrderStatus[] = ["PREPARING", "READY", "PICKED_UP"];

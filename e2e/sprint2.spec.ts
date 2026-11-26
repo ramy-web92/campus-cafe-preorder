@@ -42,3 +42,29 @@ test("E2E-S01 an Operator rejects an order with a reason and the Customer sees i
   const [row] = await sql(`SELECT status FROM "Order" WHERE "orderNumber" = $1`, [orderNumber]);
   expect(row.status).toBe("REJECTED");
 });
+
+test("E2E-S02 an Operator moves an order to Picked up and the Customer sees the full history (AC-60, AC-64)", async ({ page }) => {
+  const orderNumber = await aliceOrders(page);
+
+  await login(page, "olivia@cafe.test");
+  await page.getByRole("button", { name: `Accept ${orderNumber}` }).click();
+  await expect(page.getByText(`Order ${orderNumber} accepted.`)).toBeVisible();
+  const status = page.getByLabel("Status");
+  await status.selectOption("ACCEPTED");
+  await page.getByRole("button", { name: `Start preparing ${orderNumber}` }).click();
+  await expect(page.getByText(`Order ${orderNumber} is now Preparing.`)).toBeVisible();
+  await status.selectOption("PREPARING");
+  await page.getByRole("button", { name: `Mark ready ${orderNumber}` }).click();
+  await expect(page.getByText(`Order ${orderNumber} is now Ready.`)).toBeVisible();
+  await status.selectOption("READY");
+  await page.screenshot({ path: `${SHOTS2}/s02-queue-ready.png`, fullPage: true });
+  await page.getByRole("button", { name: `Picked up ${orderNumber}` }).click();
+  await expect(page.getByText(`Order ${orderNumber} is now Picked up.`)).toBeVisible();
+  await logout(page);
+
+  await aliceOpens(page, orderNumber);
+  const history = page.getByRole("list", { name: "Status history" });
+  await expect(history.getByRole("listitem")).toHaveCount(5);
+  await expect(history).toContainText("Ready → Picked up by Olivia Operator");
+  await page.screenshot({ path: `${SHOTS2}/s02-customer-history.png`, fullPage: true });
+});

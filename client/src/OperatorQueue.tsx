@@ -4,7 +4,8 @@ import { ApiError, Page, QueueOrder, formatTHB, operatorApi } from "./api.js";
 import StatusBadge, { statusLabel } from "./StatusBadge.js";
 import { OperatorActions } from "./OrderActions.js";
 
-const FILTERS = ["SUBMITTED", "ACCEPTED"];
+// F-08: every status can be listed (FR-11, AC-66).
+const FILTERS = ["SUBMITTED", "ACCEPTED", "PREPARING", "READY", "PICKED_UP", "REJECTED", "CANCELLED"];
 
 function minutesAgo(iso: string) {
   const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));

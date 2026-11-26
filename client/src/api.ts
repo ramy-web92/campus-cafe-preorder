@@ -119,7 +119,7 @@ export const myOrdersApi = {
 };
 
 // ---------------------------------------------------------------------------
-// Operator queue and actions (F-06, F-07)
+// Operator queue and actions (F-06, F-07, F-08)
 
 export interface QueueOrder extends OrderSummary {
   customerName: string;
@@ -134,4 +134,7 @@ export const operatorApi = {
     api<{ order: OrderDetail }>(`/api/operator/orders/${id}/reject`, { method: "POST", body: JSON.stringify({ reason }) }).then((r) => r.order),
   cancel: (id: number, reason: string) =>
     api<{ order: OrderDetail }>(`/api/operator/orders/${id}/cancel`, { method: "POST", body: JSON.stringify({ reason }) }).then((r) => r.order),
+  // F-08
+  setStatus: (id: number, status: "PREPARING" | "READY" | "PICKED_UP") =>
+    api<{ order: OrderDetail }>(`/api/operator/orders/${id}/status`, { method: "POST", body: JSON.stringify({ status }) }).then((r) => r.order),
 };

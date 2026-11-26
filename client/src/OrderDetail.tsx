@@ -47,7 +47,7 @@ export function OrderDetailView({ order, customerName }: { order: Detail; custom
         </div>
         {order.note && <p className="small"><strong>Note:</strong> {order.note}</p>}
         <h3 className="h6 mt-3">History</h3>
-        <ol className="small mb-0">
+        <ol className="small mb-0" aria-label="Status history">
           {order.history.map((h, i) => (
             <li key={i}>
               {h.fromStatus ? `${statusLabel(h.fromStatus)} → ` : ""}

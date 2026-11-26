@@ -55,3 +55,19 @@ describe("TEST-T04 — final statuses cannot change (AC-52)", () => {
     for (const to of ORDER_STATUSES) expect(canTransition(from, to)).toBe(false);
   });
 });
+
+// TEST-T05 — docs/sprints/sprint-2/sts.md (F-08, AC-60, AC-61)
+describe("TEST-T05 — fulfilment moves forward one step at a time (AC-60, AC-61)", () => {
+  it.each([
+    ["ACCEPTED", "PREPARING", true],
+    ["PREPARING", "READY", true],
+    ["READY", "PICKED_UP", true],
+    ["ACCEPTED", "READY", false],
+    ["ACCEPTED", "PICKED_UP", false],
+    ["READY", "PREPARING", false],
+    ["SUBMITTED", "PREPARING", false],
+    ["PREPARING", "CANCELLED", false],
+  ] as const)("%s → %s is %s", (from, to, allowed) => {
+    expect(canTransition(from, to)).toBe(allowed);
+  });
+});
