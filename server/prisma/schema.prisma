@@ -79,12 +79,16 @@ model Order {
   acceptedAt    DateTime?
   paymentStatus PaymentStatus       @default(UNPAID)
   paidAt        DateTime?
+  // F-11 pickup time (BR-14, D-09): ASAP orders store their submission time
+  pickupAt      DateTime            @default(now())
+  pickupAsap    Boolean             @default(true)
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
   lines         OrderLine[]
   statusChanges OrderStatusChange[]
 
   @@index([status, createdAt])
+  @@index([status, pickupAt])
   @@index([customerId, createdAt])
 }
 

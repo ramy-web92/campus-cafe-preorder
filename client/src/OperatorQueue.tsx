@@ -1,6 +1,6 @@
-// F-06/F-07 — incoming orders, oldest first, with Accept / Reject / Cancel. The server decides whether the change is still allowed.
+// F-06/F-07/F-08, F-12 dashboard — incoming orders, oldest first, with Accept / Reject / Cancel. The server decides whether the change is still allowed.
 import { useEffect, useState } from "react";
-import { ApiError, Page, QueueOrder, formatTHB, operatorApi } from "./api.js";
+import { ApiError, Page, QueueOrder, formatPickup, formatTHB, operatorApi } from "./api.js";
 import StatusBadge, { PaymentBadge, statusLabel } from "./StatusBadge.js";
 import { OperatorActions } from "./OrderActions.js";
 
@@ -18,8 +18,12 @@ export default function OperatorQueue({ onOpen }: { onOpen: (id: number) => void
   const [error, setError] = useState("");
   const [message, setMessage] = useState<{ kind: "success" | "warning"; text: string } | null>(null);
 
+  // F-12 dashboard: today's counts per status (FR-19)
+  const [counts, setCounts] = useState<Record<string, number> | null>(null);
+
   async function load(s = status) {
     setError("");
+    operatorApi.dashboard().then((d) => setCounts(d.counts)).catch(() => setCounts(null));
     try {
       setData(await operatorApi.list(s));
     } catch (e) {
@@ -58,6 +62,25 @@ export default function OperatorQueue({ onOpen }: { onOpen: (id: number) => void
         </div>
       </div>
 
+      {counts && (
+        <div className="d-flex flex-wrap gap-2 mb-3" aria-label="Orders today">
+          <span className="small text-muted align-self-center me-1" aria-hidden="true">Today</span>
+          {FILTERS.map((f) => (
+            <button
+              key={f}
+              type="button"
+              className={`btn btn-sm ${f === status ? "btn-primary" : "btn-outline-secondary"} text-start`}
+              onClick={() => setStatus(f)}
+              aria-label={`Show ${statusLabel(f)} orders (${counts[f] ?? 0} today)`}
+              aria-pressed={f === status}
+            >
+              <span className="d-block fw-semibold">{counts[f] ?? 0}</span>
+              <span className="small">{statusLabel(f)}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div role="status" aria-live="polite">
         {message?.kind === "success" && <div className="alert alert-success py-2">{message.text}</div>}
       </div>
@@ -75,13 +98,14 @@ export default function OperatorQueue({ onOpen }: { onOpen: (id: number) => void
       ) : (
         <div className="table-responsive">
           <table className="table align-middle">
-            <caption className="visually-hidden">{statusLabel(status)} orders, oldest first</caption>
+            <caption className="visually-hidden">{statusLabel(status)} orders, earliest pickup first</caption>
             <thead>
               <tr>
                 <th scope="col">Order</th>
                 <th scope="col">Customer</th>
                 <th scope="col">Items</th>
                 <th scope="col">Total</th>
+                <th scope="col">Pickup</th>
                 <th scope="col">Placed</th>
                 <th scope="col">Status</th>
                 <th scope="col"><span className="visually-hidden">Action</span></th>
@@ -94,6 +118,7 @@ export default function OperatorQueue({ onOpen }: { onOpen: (id: number) => void
                   <td>{o.customerName}</td>
                   <td>{o.itemCount}</td>
                   <td className="text-nowrap">{formatTHB(o.totalSatang)}</td>
+                  <td className="text-nowrap">{o.pickupAsap === false ? formatPickup(o) : "ASAP"}</td>
                   <td className="text-nowrap">{minutesAgo(o.createdAt)}</td>
                   <td><div className="d-flex flex-wrap gap-1"><StatusBadge status={o.status} /> <PaymentBadge status={o.paymentStatus} /></div></td>
                   <td>

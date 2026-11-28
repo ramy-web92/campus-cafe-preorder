@@ -1,6 +1,6 @@
 # F-06 Operator order queue and accept
 
-**Requirements:** FR-08, FR-09, BR-06 (accept), BR-07, BR-09, BR-11 · **Issue:** #8 · **Depends on:** F-02, F-04 · **Version:** 1.1
+**Requirements:** FR-08, FR-09, BR-06 (accept), BR-07, BR-09, BR-11 · **Issue:** #8 · **Depends on:** F-02, F-04 · **Version:** 1.2
 
 ## Feature SDS
 - **Queue:** Operators list orders filtered by status (default `SUBMITTED`), oldest first (first come, first served), with customer name, number, item count, total and age.
@@ -26,7 +26,7 @@ Uses `Order.status`, `acceptedAt`, `version` and `OrderStatusChange` (F-16). No 
 ## Acceptance criteria
 | ID | Criterion |
 |---|---|
-| AC-30 | Given submitted and accepted orders, when an Operator opens the queue, then only Submitted orders are listed, oldest first; with `status=ACCEPTED` only accepted ones are listed. |
+| AC-30 | Given submitted and accepted orders, when an Operator opens the queue, then only Submitted orders are listed, earliest pickup first (ASAP orders by submission time, so a list of ASAP orders is oldest first); with `status=ACCEPTED` only accepted ones are listed. *(Revised in v1.2 for FR-15 / F-11; Sprint 1 text: "oldest first".)* |
 | AC-31 | Given a Submitted order, when an Operator accepts it, then 200 is returned, the stored status is `ACCEPTED` with `acceptedAt`, and one history entry `SUBMITTED → ACCEPTED` with the operator as actor is stored. |
 | AC-32 | Given an order that is already Accepted, when an Operator accepts it again, then 409 `INVALID_TRANSITION` is returned and nothing changes. |
 | AC-33 | A Customer calling the accept or queue endpoints receives 403; an anonymous request receives 401; the order is unchanged. |
@@ -38,3 +38,4 @@ Uses `Order.status`, `acceptedAt`, `version` and `OrderStatusChange` (F-16). No 
 |---|---|---|
 | 1.0 | 2026-11-05 | Initial contract |
 | 1.1 | 2026-11-07 | Corrected the Issue number (the baseline PR took #1, so issues are #2–#9). No behavior change. |
+| 1.2 | 2026-11-26 | AC-30 sort order revised for FR-15 (pickup time, F-11): earliest pickup first; unchanged for ASAP orders. See docs/sprints/sprint-3/README.md. |

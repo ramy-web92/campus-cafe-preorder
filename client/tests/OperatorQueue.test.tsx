@@ -1,4 +1,4 @@
-// UI-03 — docs/sprints/sprint-1/sts.md (AC-30, AC-31, AC-32); UI-S01, UI-S03 — docs/sprints/sprint-2/sts.md. The API module is mocked.
+// UI-03 — docs/sprints/sprint-1/sts.md (AC-30, AC-31, AC-32); UI-S01, UI-S03 — docs/sprints/sprint-2/sts.md; UI-SS01 — docs/sprints/sprint-3/sts.md. The API module is mocked.
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import OperatorQueue from "../src/OperatorQueue.js";
@@ -6,7 +6,7 @@ import * as api from "../src/api.js";
 
 vi.mock("../src/api.js", async (orig) => {
   const actual = await orig<typeof import("../src/api.js")>();
-  return { ...actual, operatorApi: { list: vi.fn(), get: vi.fn(), accept: vi.fn(), reject: vi.fn(), cancel: vi.fn(), setStatus: vi.fn() } };
+  return { ...actual, operatorApi: { list: vi.fn(), get: vi.fn(), accept: vi.fn(), reject: vi.fn(), cancel: vi.fn(), setStatus: vi.fn(), dashboard: vi.fn().mockResolvedValue({ date: "2026-11-26", counts: {} }) } };
 });
 
 const order = { id: 12, orderNumber: "ORD-20261106-0004", customerName: "Alice Customer", status: "SUBMITTED", totalSatang: 17500, itemCount: 3, createdAt: new Date().toISOString() };
@@ -99,5 +99,20 @@ describe("Operator queue", () => {
       await user.selectOptions(screen.getByLabelText("Status"), status);
       await waitFor(() => expect(api.operatorApi.list).toHaveBeenLastCalledWith(status));
     }
+  });
+
+  it("UI-SS01 shows today's counts per status and filters the queue from a card (AC-114)", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.operatorApi.dashboard).mockResolvedValueOnce({
+      date: "2026-11-26",
+      counts: { SUBMITTED: 3, ACCEPTED: 1, PREPARING: 0, READY: 2, PICKED_UP: 5, REJECTED: 0, CANCELLED: 1 },
+    });
+    vi.mocked(api.operatorApi.list).mockResolvedValue(page([]));
+    render(<OperatorQueue onOpen={vi.fn()} />);
+    const ready = await screen.findByRole("button", { name: "Show Ready orders (2 today)" });
+    expect(screen.getByRole("button", { name: "Show Picked up orders (5 today)" })).toBeInTheDocument();
+    await user.click(ready);
+    await waitFor(() => expect(api.operatorApi.list).toHaveBeenLastCalledWith("READY"));
+    expect(screen.getByLabelText("Status")).toHaveValue("READY");
   });
 });

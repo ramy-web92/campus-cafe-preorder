@@ -6,7 +6,7 @@ import * as api from "../src/api.js";
 
 vi.mock("../src/api.js", async (orig) => {
   const actual = await orig<typeof import("../src/api.js")>();
-  return { ...actual, authApi: { login: vi.fn(), me: vi.fn(), logout: vi.fn() }, menuApi: { get: vi.fn().mockResolvedValue([]) }, operatorApi: { list: vi.fn().mockResolvedValue({ orders: [], pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 } }) } };
+  return { ...actual, authApi: { login: vi.fn(), me: vi.fn(), logout: vi.fn() }, menuApi: { get: vi.fn().mockResolvedValue([]) }, operatorApi: { list: vi.fn().mockResolvedValue({ orders: [], pagination: { page: 1, pageSize: 10, totalItems: 0, totalPages: 0 } }), dashboard: vi.fn().mockResolvedValue({ date: "2026-11-26", counts: {} }) } };
 });
 
 const alice = { id: 1, name: "Alice Customer", email: "alice@cafe.test", role: "CUSTOMER" as const };

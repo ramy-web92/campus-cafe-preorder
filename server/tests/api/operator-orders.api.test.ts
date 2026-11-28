@@ -1,4 +1,4 @@
-// TEST-Q01..TEST-Q05 — docs/sprints/sprint-1/sts.md (AC-30..AC-35)
+// TEST-Q01..TEST-Q05 — docs/sprints/sprint-1/sts.md (AC-30..AC-35); TEST-Q01 revised for AC-30 v1.2 (F-11)
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import request from "supertest";
 import { app } from "../../src/app.js";
@@ -30,13 +30,13 @@ afterAll(async () => {
 });
 
 describe("GET /api/operator/orders", () => {
-  it("TEST-Q01 lists Submitted orders oldest first by default, and filters by status (AC-30)", async () => {
+  it("TEST-Q01 lists Submitted orders earliest pickup first by default, and filters by status (AC-30 v1.2)", async () => {
     const res = await olivia.get("/api/operator/orders");
     expect(res.status).toBe(200);
     const orders = res.body.orders;
     expect(orders.length).toBeGreaterThan(0);
     expect(orders.every((o: any) => o.status === "SUBMITTED")).toBe(true);
-    const times = orders.map((o: any) => new Date(o.createdAt).getTime());
+    const times = orders.map((o: any) => new Date(o.pickupAt).getTime());
     expect(times).toEqual([...times].sort((a, b) => a - b));
     expect(orders[0]).toMatchObject({ customerName: expect.any(String), itemCount: expect.any(Number), totalSatang: expect.any(Number) });
     expect(res.body.pagination.totalItems).toBe(await prisma.order.count({ where: { status: "SUBMITTED" } }));

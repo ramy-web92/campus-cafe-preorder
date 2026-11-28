@@ -138,6 +138,8 @@ async function main() {
         version: history.length,
         acceptedAt: o.status === OrderStatus.ACCEPTED ? history[1].createdAt : null,
         createdAt,
+        pickupAt: createdAt, // ASAP (F-11, D-09)
+        pickupAsap: true,
         lines: { create: lines },
         statusChanges: { create: history },
       },

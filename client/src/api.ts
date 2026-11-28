@@ -79,6 +79,8 @@ export interface OrderDetail {
   acceptedAt: string | null;
   paymentStatus: PaymentStatus; // F-10
   paidAt: string | null;
+  pickupAt?: string; // F-11
+  pickupAsap?: boolean;
   lines: OrderLine[];
   history: { fromStatus: string | null; toStatus: string; actorName: string; reason: string | null; createdAt: string }[];
 }
@@ -104,8 +106,9 @@ export const menuAdminApi = {
 };
 
 export const ordersApi = {
-  create: (lines: { menuItemId: number; quantity: number }[], note: string) =>
-    api<{ order: OrderDetail }>("/api/orders", { method: "POST", body: JSON.stringify({ lines, note: note || undefined }) }).then((r) => r.order),
+  // pickupAt: ISO instant of a chosen pickup time (F-11); omitted = as soon as possible
+  create: (lines: { menuItemId: number; quantity: number }[], note: string, pickupAt?: string) =>
+    api<{ order: OrderDetail }>("/api/orders", { method: "POST", body: JSON.stringify({ lines, note: note || undefined, pickupAt }) }).then((r) => r.order),
 };
 
 /** 6500 → "65.00 THB" (prices are integer satang, D-03). */
@@ -122,6 +125,8 @@ export interface OrderSummary {
   orderNumber: string;
   status: string;
   paymentStatus: PaymentStatus;
+  pickupAt?: string; // F-11
+  pickupAsap?: boolean;
   totalSatang: number;
   itemCount: number;
   createdAt: string;
@@ -131,8 +136,18 @@ export interface Page<T> {
   pagination: { page: number; pageSize: number; totalItems: number; totalPages: number };
 }
 
+// F-13 filters; empty values are not sent
+export interface OrderFilters {
+  status?: string;
+  from?: string;
+  to?: string;
+}
 export const myOrdersApi = {
-  list: (page = 1) => api<Page<OrderSummary>>(`/api/orders?page=${page}`),
+  list: (page = 1, filters: OrderFilters = {}) => {
+    const params = new URLSearchParams({ page: String(page) });
+    for (const [k, v] of Object.entries(filters)) if (v) params.set(k, v);
+    return api<Page<OrderSummary>>(`/api/orders?${params}`);
+  },
   get: (id: number) => api<{ order: OrderDetail }>(`/api/orders/${id}`).then((r) => r.order),
   // F-07
   cancel: (id: number) => api<{ order: OrderDetail }>(`/api/orders/${id}/cancel`, { method: "POST" }).then((r) => r.order),
@@ -142,6 +157,13 @@ export const myOrdersApi = {
 
 // ---------------------------------------------------------------------------
 // Operator queue and actions (F-06, F-07, F-08)
+
+export interface SalesSummary {
+  date: string;
+  completedOrders: number;
+  revenueSatang: number;
+  topItems: { menuItemId: number; itemName: string; quantity: number; revenueSatang: number }[];
+}
 
 export interface QueueOrder extends OrderSummary {
   customerName: string;
@@ -156,7 +178,16 @@ export const operatorApi = {
     api<{ order: OrderDetail }>(`/api/operator/orders/${id}/reject`, { method: "POST", body: JSON.stringify({ reason }) }).then((r) => r.order),
   cancel: (id: number, reason: string) =>
     api<{ order: OrderDetail }>(`/api/operator/orders/${id}/cancel`, { method: "POST", body: JSON.stringify({ reason }) }).then((r) => r.order),
+  // F-12
+  sales: (date?: string) => api<SalesSummary>(`/api/operator/sales${date ? `?date=${date}` : ""}`),
+  dashboard: () => api<{ date: string; counts: Record<string, number> }>("/api/operator/dashboard"),
   // F-08
   setStatus: (id: number, status: "PREPARING" | "READY" | "PICKED_UP") =>
     api<{ order: OrderDetail }>(`/api/operator/orders/${id}/status`, { method: "POST", body: JSON.stringify({ status }) }).then((r) => r.order),
 };
+
+/** F-11: "ASAP" or the pickup date/time in Bangkok time (D-07). */
+export function formatPickup(o: { pickupAt?: string; pickupAsap?: boolean }): string {
+  if (o.pickupAsap !== false || !o.pickupAt) return "As soon as possible";
+  return new Date(o.pickupAt).toLocaleString("en-GB", { timeZone: "Asia/Bangkok", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}

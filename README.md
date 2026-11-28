@@ -2,7 +2,7 @@
 
 Pre-order food and drinks from the campus café and pick them up at the counter.
 CPE 334 group project — Theme 4, E-Commerce or Ordering System.
-Team: FAHS Rémy (69546000443) · DARWICHE Maxime (69540460044)
+Team: FAHS Rémy (69540460043) · DARWICHE Maxime (69540460044)
 
 | Layer | Stack |
 |---|---|
@@ -11,7 +11,16 @@ Team: FAHS Rémy (69546000443) · DARWICHE Maxime (69540460044)
 | Data | PostgreSQL 16, Prisma 5 |
 | Tests | Vitest, Supertest, React Testing Library, Playwright |
 
-Engineering documents: [docs/srs.md](docs/srs.md) · [docs/features.md](docs/features.md) · [docs/traceability.md](docs/traceability.md) · [docs/system-sds.md](docs/system-sds.md) · [docs/sprints/plan.md](docs/sprints/plan.md) · [Sprint 1 contracts](docs/sprints/sprint-1/README.md)
+Engineering documents: [docs/srs.md](docs/srs.md) · [docs/features.md](docs/features.md) · [docs/traceability.md](docs/traceability.md) · [docs/system-sds.md](docs/system-sds.md) · [docs/sprints/plan.md](docs/sprints/plan.md) · [Sprint 1 contracts](docs/sprints/sprint-1/README.md) · [Sprint 2 contracts](docs/sprints/sprint-2/README.md) · [Sprint 3 contracts](docs/sprints/sprint-3/README.md)
+
+## What it does (current release candidate)
+
+| Role | Features |
+|---|---|
+| Customer | Log in · browse the menu · order with a pickup time (ASAP or 08:00–18:00) · My orders with status/date filters · order detail with history · cancel while Submitted · simulated payment (refund on cancel/reject) |
+| Operator | Today's status cards · queue earliest pickup first, every status · accept / reject with reason / Preparing → Ready → Picked up / cancel with reason · menu management (prices 0.01–1,000 THB, sold out) · daily sales summary |
+
+After pulling new commits, run `npx prisma migrate dev` in `server/` again: Sprint 2 and 3 added two migrations (payment, pickup time).
 
 ## Prerequisites
 

@@ -1,4 +1,4 @@
-// UI-01, UI-02 — docs/sprints/sprint-1/sts.md (AC-10, AC-15, AC-17). The API module is mocked.
+// UI-01, UI-02, UI-04 (DEF-D01) — docs/sprints/sprint-1/sts.md (AC-10, AC-15, AC-16, AC-17). The API module is mocked. · UI-K01 — docs/sprints/sprint-3/sts.md
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Menu from "../src/Menu.js";
@@ -45,7 +45,7 @@ describe("Menu and cart", () => {
     expect(screen.getByRole("button", { name: "Add Iced Latte" })).toBeDisabled();
   });
 
-  it("UI-03 offers no Place order button while the cart is empty and never calls the API (DEF-D01, AC-16)", async () => {
+  it("UI-04 offers no Place order button while the cart is empty and never calls the API (DEF-D01, AC-16)", async () => {
     const user = userEvent.setup();
     render(<Menu />);
     expect(await screen.findByText(/your cart is empty/i)).toBeInTheDocument();
@@ -90,6 +90,28 @@ describe("Menu and cart", () => {
     expect(api.ordersApi.create).toHaveBeenCalledWith([{ menuItemId: 3, quantity: 2 }, { menuItemId: 9, quantity: 1 }], "");
     expect(await screen.findByRole("status")).toHaveTextContent("ORD-20261106-0004");
     expect(screen.getByText(/your cart is empty/i)).toBeInTheDocument();
+  });
+
+  it("UI-K01 sends a chosen pickup time; ASAP sends none (AC-100, AC-102)", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.ordersApi.create).mockReset().mockResolvedValue({
+      id: 13, orderNumber: "ORD-20261126-0001", status: "SUBMITTED", totalSatang: 6500, note: null,
+      createdAt: "2026-11-26T03:00:00Z", acceptedAt: null, paymentStatus: "UNPAID", paidAt: null, lines: [], history: [],
+    } as any);
+    render(<Menu />);
+    await user.click(await screen.findByRole("button", { name: "Add Iced Latte" }));
+    expect(screen.getByRole("radio", { name: "As soon as possible" })).toBeChecked();
+    expect(screen.queryByLabelText("Pickup date and time")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: "Choose a time" }));
+    const input = screen.getByLabelText("Pickup date and time");
+    await user.type(input, "2026-11-27T09:30");
+    await user.click(screen.getByRole("button", { name: "Place order" }));
+    expect(api.ordersApi.create).toHaveBeenLastCalledWith([{ menuItemId: 3, quantity: 1 }], "", new Date("2026-11-27T09:30").toISOString());
+
+    await user.click(await screen.findByRole("button", { name: "Add Iced Latte" }));
+    await user.click(screen.getByRole("radio", { name: "As soon as possible" }));
+    await user.click(screen.getByRole("button", { name: "Place order" }));
+    expect(api.ordersApi.create).toHaveBeenLastCalledWith([{ menuItemId: 3, quantity: 1 }], "");
   });
 
   it("shows a safe error with Retry when the menu cannot load", async () => {
