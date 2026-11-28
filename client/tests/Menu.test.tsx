@@ -1,4 +1,4 @@
-// UI-01, UI-02 — docs/sprints/sprint-1/sts.md (AC-10, AC-15, AC-17). The API module is mocked. · UI-K01 — docs/sprints/sprint-3/sts.md
+// UI-01, UI-02, UI-04 (DEF-D01) — docs/sprints/sprint-1/sts.md (AC-10, AC-15, AC-16, AC-17). The API module is mocked. · UI-K01 — docs/sprints/sprint-3/sts.md
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Menu from "../src/Menu.js";
@@ -45,7 +45,7 @@ describe("Menu and cart", () => {
     expect(screen.getByRole("button", { name: "Add Iced Latte" })).toBeDisabled();
   });
 
-  it("UI-03 offers no Place order button while the cart is empty and never calls the API (DEF-D01, AC-16)", async () => {
+  it("UI-04 offers no Place order button while the cart is empty and never calls the API (DEF-D01, AC-16)", async () => {
     const user = userEvent.setup();
     render(<Menu />);
     expect(await screen.findByText(/your cart is empty/i)).toBeInTheDocument();
